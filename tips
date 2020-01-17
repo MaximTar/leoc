@@ -1,0 +1,13 @@
+1. Changed lines in file /usr/local/lib/python3.5/dist-packages/pyorbital/orbital.py
+Was:
+elif self.mode == SGDP4_NEAR_SIMP:
+    raise NotImplementedError('Mode "Near-space, simplified equations"'
+                              ' not implemented')
+Became:
+elif self.mode == SGDP4_NEAR_SIMP:
+    tempa = 1.0 - ts * self.c1
+    tempe = self.bstar * ts * self.c4
+    templ = ts * ts * self.t2cof
+    a = self.aodp * tempa * tempa
+    e = em - tempe
+    xl = xmp + omega + xnode + self.xnodp * templ
