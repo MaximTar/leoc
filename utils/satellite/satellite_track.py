@@ -4,15 +4,15 @@ from PyQt5.QtGui import QPainter, QPainterPath
 from PyQt5.QtCore import Qt, QPointF
 from PyQt5.QtWidgets import QWidget
 from utils.qpoints_utils import *
-import sys  # Suppressing the error messages
-
-
-class DevNull:
-    def write(self, msg):
-        pass
-
-
-sys.stderr = DevNull()  # Suppressing the error messages
+# import sys  # Suppressing the error messages
+#
+#
+# class DevNull:
+#     def write(self, msg):
+#         pass
+#
+#
+# sys.stderr = DevNull()  # Suppressing the error messages
 
 
 class SatelliteTrack(QWidget):
@@ -59,6 +59,7 @@ class SatelliteTrack(QWidget):
 
         # extract points for only current revolution
         # TODO check if current position is in points
+        # TODO think about 0/360 longitude
         revolution_points = []
         current = False
         for i in range(len(points) - 1):

@@ -23,6 +23,26 @@ def save_tle(tle):
         f.close()
 
 
+def remove_tle_by_name(name):
+    name_idx = get_all_names().index(name)
+    lines = get_all_lines()
+    del lines[name_idx * 3:name_idx * 3 + 3]
+    f = open(file_name, 'w')
+    for line in lines:
+        f.write(line)
+    f.close()
+
+
+def remove_tle_by_index(index):
+    lines = get_all_lines()
+    del lines[index * 3:index * 3 + 3]
+    print(lines)
+    f = open(file_name, 'w')
+    for line in lines:
+        f.write(line)
+    f.close()
+
+
 def already_in_file(tle):
     with open(file_name) as f:
         line = f.readline()
@@ -48,6 +68,7 @@ def get_all_full_names():
 def get_all_ids():
     ids = []
     for fn in get_all_full_names():
+        # TODO check if int
         ids.append(fn.split(' ')[0])
     return ids
 
@@ -56,6 +77,7 @@ def get_all_names():
     names = []
     for fn in get_all_full_names():
         fn = fn.rstrip().split(' ')
+        # TODO check if int
         fn.pop(0)
         names.append(' '.join(fn))
     return names
@@ -98,6 +120,7 @@ def get_orb_list_by_tle_list(tle_list):
 class TleHandler:
 
     def __init__(self, sat_id=None, tle=None):
+        # TODO refactor it!
         self.already_exists = None
         self.sat_id = None
         self.tle = None
@@ -107,7 +130,8 @@ class TleHandler:
             pass
 
         if (sat_id is not None and str(sat_id) in get_all_ids()) \
-                or (tle is not None and str(tle[0].split(' ').pop(0)) in get_all_ids()):
+            or (tle is not None and str(tle[0].split(' ').pop(0)) in get_all_ids()):
+            # TODO return satellite name to the user
             self.already_exists = True
         elif sat_id is not None or tle is not None:
             if sat_id is not None:
