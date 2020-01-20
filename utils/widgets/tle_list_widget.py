@@ -21,6 +21,7 @@ class TleListWidget(QListWidget):
 
     def item_changed(self, item):
         if item.checkState() == Qt.Checked:
+            # TODO maybe indexes are better than names
             self.checked_names_list.append(item.text())
         elif item.checkState() == Qt.Unchecked:
             self.checked_names_list.remove(item.text())

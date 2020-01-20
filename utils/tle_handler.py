@@ -6,6 +6,8 @@ from pyorbital.orbital import Orbital
 from requests import get
 from spacetrack import SpaceTrackClient
 
+# Work with indexes and satellite identifiers is preferable, since names can be duplicated
+
 ST_USERNAME = "max_131092@mail.ru"
 ST_PASSWORD = "Acslacslacslacsl"
 
@@ -109,12 +111,43 @@ def get_orb_list_by_tle_list(tle_list):
             orb_list.append(orb)
     return orb_list
 
-    # TODO
-    # def update_tle(sat_id=None, upd_all=True):
-    #     if upd_all:
-    #         ids = get_all_ids()
-    #         for sat_id in ids:
-    #             TleHandler(sat_id)
+
+def get_sat_id_by_name(name):
+    return get_all_ids()[get_all_names().index(name)]
+
+
+# preferred method
+def update_tle_by_index(index):
+    lines = get_all_lines()
+    sat_id = lines[index * 3].split(' ').pop(0)
+    # TODO check sat_id
+    update_tle_by_sat_id(sat_id)
+
+
+def update_tle_by_name(name):
+    update_tle_by_sat_id(get_sat_id_by_name(name))
+
+
+def update_tle_by_sat_id(sat_id):
+    print(get_all_ids())
+    tle = get_tle_by_sat_id(sat_id)
+    if tle is None:
+        # TODO
+        pass
+    else:
+        print(tle)
+        tle = ['{}\n'.format(e) for e in tle]
+        lines = get_all_lines()
+        idx = get_all_ids().index(sat_id)
+        lines[idx * 3:idx * 3 + 3] = tle
+        with open(file_name, 'w') as file:
+            file.writelines(lines)
+
+
+def update_all_tles():
+    ids = get_all_ids()
+    for sat_id in ids:
+        update_tle_by_sat_id(sat_id)
 
 
 def _get_spacetrack_tle(sat_id, start_date=None, end_date=None, username=ST_USERNAME, password=ST_PASSWORD,
@@ -144,7 +177,8 @@ def _get_spacetrack_tle(sat_id, start_date=None, end_date=None, username=ST_USER
         name = tle[0].split(' ')
         name.pop(0)
         tle[0] = str(sat_id) + ' ' + str(' '.join(name))
-        return tle
+        # sometimes there may be empty elements
+        return tle[0], tle[1], tle[2]
 
 
 def _get_celestrak_tle(sat_id):
@@ -155,6 +189,16 @@ def _get_celestrak_tle(sat_id):
         tle[0] = str(sat_id) + ' ' + str(tle[0])
     return tle
     # satellite = ephem.readtle(*tle)
+
+
+def get_tle_by_sat_id(sat_id):
+    if sat_id is None:
+        return None
+    # TODO check sat_id
+    tle = _get_celestrak_tle(sat_id)
+    if tle is None:
+        tle = _get_spacetrack_tle(sat_id)
+    return tle
 
 
 class TleHandler:

@@ -2,7 +2,7 @@ import sys
 
 from PyQt5.QtWidgets import *
 
-from utils.manual_tle_input_widget import ManualTleInputWidget
+from utils.widgets.manual_tle_input_widget import ManualTleInputWidget
 from utils.widgets.map_widget import MapWidget
 from utils.widgets.tle_list_widget import *
 from utils.satellite.satellite_footprint import *
@@ -48,7 +48,7 @@ class MainWindow(QMainWindow):
             pass
         elif result == th.Result.ALREADY_EXISTS:
             # TODO return sat_id to the user / get sat name
-            QMessageBox.information(self, "Find TLE by satellite ID", "TLE already in list", QMessageBox.Ok)
+            QMessageBox.information(self, "Find TLE by ID", "TLE already in list", QMessageBox.Ok)
         elif result == th.Result.SAVED:
             self.tle_list_widget.update_list()
 
@@ -107,21 +107,35 @@ class MainWindow(QMainWindow):
 
     def remove_btn_clicked(self):
         remove_box = QMessageBox(self)
-        if not self.tle_list_widget.selectedItems():
+        selected_items = self.tle_list_widget.selectedItems()
+        if not selected_items:
             remove_box.setText("No TLE selected")
             remove_box.setStandardButtons(QMessageBox.Ok)
             remove_box.exec()
         else:
             remove_box.setText("Are you really want to remove {} from the list?"
-                               .format(self.tle_list_widget.selectedItems()[0].text()))
+                               .format(selected_items[0].text()))
             remove_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
             result = remove_box.exec()
             if result == QMessageBox.Yes:
                 self.remove_from_tle_list_widget(self.tle_list_widget.selectionModel().selectedIndexes()[0].row())
 
     def update_btn_clicked(self):
-        # TODO
-        pass
+        update_box = QMessageBox(self)
+        update_box.setText("Do you want to update all TLEs or only selected one?")
+        update_box.setStandardButtons(QMessageBox.Cancel)
+        all_btn = update_box.addButton("All", QMessageBox.ActionRole)
+        selected_btn = update_box.addButton("Selected", QMessageBox.ActionRole)
+
+        update_box.exec()
+
+        if update_box.clickedButton() == all_btn:
+            update_all_tles()
+        elif update_box.clickedButton() == selected_btn:
+            if not self.tle_list_widget.selectedItems():
+                QMessageBox.information(self, "Update TLE", "No TLE selected", QMessageBox.Ok)
+            else:
+                update_tle_by_index(self.tle_list_widget.selectionModel().selectedIndexes()[0].row())
 
     def send_btn_clicked(self):
         # TODO
