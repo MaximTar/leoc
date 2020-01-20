@@ -1,6 +1,7 @@
 import os
 
 import spacetrack.operators as op
+from enum import Enum
 from pyorbital.orbital import Orbital
 from requests import get
 from spacetrack import SpaceTrackClient
@@ -108,84 +109,81 @@ def get_orb_list_by_tle_list(tle_list):
             orb_list.append(orb)
     return orb_list
 
+    # TODO
+    # def update_tle(sat_id=None, upd_all=True):
+    #     if upd_all:
+    #         ids = get_all_ids()
+    #         for sat_id in ids:
+    #             TleHandler(sat_id)
 
-# TODO
-# def update_tle(sat_id=None, upd_all=True):
-#     if upd_all:
-#         ids = get_all_ids()
-#         for sat_id in ids:
-#             TleHandler(sat_id)
+
+def _get_spacetrack_tle(sat_id, start_date=None, end_date=None, username=ST_USERNAME, password=ST_PASSWORD,
+                        latest=True):
+    """
+    For an satellite with the given id returns the TLE.
+    Also needs date range and spacetrack username and password.
+    Optional flag is used to get the latest data.
+    :param start_date:
+    :param end_date:
+    :param username:
+    :param password:
+    :param latest:
+    :return: two TLE string arrays
+    """
+    stc = SpaceTrackClient(identity=username, password=password)
+    if not latest:
+        date_range = op.inclusive_range(start_date, end_date)
+        data = stc.tle(norad_cat_id=sat_id, orderby='epoch desc', limit=1, format='3le', epoch=date_range)
+    else:
+        data = stc.tle_latest(norad_cat_id=sat_id, orderby='epoch desc', limit=1, format='3le')
+
+    if not data:
+        return None
+    else:
+        tle = data.split('\n')
+        name = tle[0].split(' ')
+        name.pop(0)
+        tle[0] = str(sat_id) + ' ' + str(' '.join(name))
+        return tle
+
+
+def _get_celestrak_tle(sat_id):
+    tle = get("http://www.celestrak.com/satcat/tle.php?CATNR={}".format(sat_id)).text.strip().split("\r\n")
+    if tle == ["No TLE found"]:
+        tle = None
+    else:
+        tle[0] = str(sat_id) + ' ' + str(tle[0])
+    return tle
+    # satellite = ephem.readtle(*tle)
 
 
 class TleHandler:
+    class Result(Enum):
+        IS_NONE = 1
+        ALREADY_EXISTS = 2
+        SAVED = 3
 
-    def __init__(self, sat_id=None, tle=None):
-        # TODO refactor it!
-        self.already_exists = None
-        self.sat_id = None
-        self.tle = None
+    def save_by_tle(self, tle):
+        if tle is None:
+            return self.Result.IS_NONE
+        # TODO check if pop is int
+        elif tle is not None and str(tle[0].split(' ').pop(0)) in get_all_ids():
+            return self.Result.ALREADY_EXISTS
+        elif tle is not None:
+            # TODO add TLE check
+            save_tle(tle)
+            return self.Result.SAVED
 
-        if sat_id is not None and tle is not None:
-            # TODO error
-            pass
-
-        if (sat_id is not None and str(sat_id) in get_all_ids()) \
-            or (tle is not None and str(tle[0].split(' ').pop(0)) in get_all_ids()):
-            # TODO return satellite name to the user
-            self.already_exists = True
-        elif sat_id is not None or tle is not None:
-            if sat_id is not None:
-                # TODO make something with freeze
-                self.sat_id = sat_id
-
-                self.tle = self.__get_celestrak_tle()
-                if self.tle is None:
-                    self.tle = self.__get_spacetrack_tle()
-            elif tle is not None:
-                self.tle = tle
-
-            if self.tle is None:
-                # TODO raise and handle exception
-                pass
-            else:
-                # TODO add TLE check
-                self.orb = Orbital(satellite=self.tle[0], line1=self.tle[1], line2=self.tle[2])
-                save_tle(self.tle)
-
-    def __get_spacetrack_tle(self, start_date=None, end_date=None, username=ST_USERNAME, password=ST_PASSWORD,
-                             latest=True):
-        """
-        For an satellite with the given id returns the TLE.
-        Also needs date range and spacetrack username and password.
-        Optional flag is used to get the latest data.
-        :param start_date:
-        :param end_date:
-        :param username:
-        :param password:
-        :param latest:
-        :return: two TLE string arrays
-        """
-        stc = SpaceTrackClient(identity=username, password=password)
-        if not latest:
-            date_range = op.inclusive_range(start_date, end_date)
-            data = stc.tle(norad_cat_id=self.sat_id, orderby='epoch desc', limit=1, format='3le', epoch=date_range)
-        else:
-            data = stc.tle_latest(norad_cat_id=self.sat_id, orderby='epoch desc', limit=1, format='3le')
-
-        if not data:
-            return None
-        else:
-            tle = data.split('\n')
-            name = tle[0].split(' ')
-            name.pop(0)
-            tle[0] = str(self.sat_id) + ' ' + str(' '.join(name))
-            return tle
-
-    def __get_celestrak_tle(self):
-        tle = get("http://www.celestrak.com/satcat/tle.php?CATNR={}".format(self.sat_id)).text.strip().split("\r\n")
-        if tle == ["No TLE found"]:
-            tle = None
-        else:
-            tle[0] = str(self.sat_id) + ' ' + str(tle[0])
-        return tle
-        # satellite = ephem.readtle(*tle)
+    def save_by_sat_id(self, sat_id):
+        if sat_id is None:
+            return self.Result.IS_NONE
+        elif sat_id is not None and str(sat_id) in get_all_ids():
+            return self.Result.ALREADY_EXISTS
+        # TODO check sat_id
+        elif sat_id is not None:
+            # TODO make something with freeze
+            tle = _get_celestrak_tle(sat_id)
+            if tle is None:
+                tle = _get_spacetrack_tle(sat_id)
+            self.save_by_tle(tle)
+            return self.Result.SAVED

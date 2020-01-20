@@ -37,14 +37,19 @@ class MainWindow(QMainWindow):
         self.map_widget.update_map(orb_list)
 
     def add_to_tle_list_widget(self, sat_id=None, tle=None):
+        th = TleHandler()
         if sat_id is not None:
-            th = TleHandler(sat_id=sat_id)
+            result = th.save_by_sat_id(sat_id)
         else:
-            th = TleHandler(tle=tle)
+            result = th.save_by_tle(tle)
 
-        if th.already_exists:
+        if result == th.Result.IS_NONE:
+            # TODO
+            pass
+        elif result == th.Result.ALREADY_EXISTS:
+            # TODO return sat_id to the user / get sat name
             QMessageBox.information(self, "Find TLE by satellite ID", "TLE already in list", QMessageBox.Ok)
-        else:
+        elif result == th.Result.SAVED:
             self.tle_list_widget.update_list()
 
     def remove_from_tle_list_widget(self, index):
