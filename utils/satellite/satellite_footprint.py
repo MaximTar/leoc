@@ -1,6 +1,6 @@
 from datetime import datetime
 from math import acos, atan2, cos, degrees, radians, sin, sqrt
-from PyQt5.QtCore import Qt, QPointF
+from PyQt5.QtCore import Qt, QPointF, QTimer
 from PyQt5.QtGui import QPainter, QPainterPath, QPolygon
 from PyQt5.QtWidgets import QWidget
 from utils.qpoints_utils import qpoints_scaling
@@ -14,23 +14,27 @@ class SatelliteFootprint(QWidget):
         super().__init__()
         self.orb = orb
         self.points = self.__create_points_array()
+        self.no_points = False
+        if self.points is None:
+            self.no_points = True
 
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setPen(Qt.yellow)
 
-        scaled_points = qpoints_scaling(self.width(), self.height(), self.points)
+        if self.points is not None:
+            scaled_points = qpoints_scaling(self.width(), self.height(), self.points)
 
-        # TODO FIXME (when trajectory goes through edge/intersects zero)
-        path = QPainterPath()
-        first = True
-        for p in scaled_points:
-            if first:
-                path.moveTo(p)
-                first = False
-            path.lineTo(p)
+            # TODO FIXME (when trajectory goes through edge/intersects zero)
+            # path = QPainterPath()
+            # first = True
+            # for p in scaled_points:
+            #     if first:
+            #         path.moveTo(p)
+            #         first = False
+            #     path.lineTo(p)
 
-        painter.drawPolygon(QPolygon(scaled_points))
+            painter.drawPolygon(QPolygon(scaled_points))
         # painter.drawPath(path)
 
     def __create_points_array(self):
@@ -38,16 +42,20 @@ class SatelliteFootprint(QWidget):
         Modified math from https://github.com/trehn/termtrack.git.
         """
         now = datetime.utcnow()
-        lon, lat, alt = self.orb.get_lonlatalt(now)
-        alt *= 1000
-        earth_radius = earth_radius_at_latitude(lat)
-        horizon_radius = acos(earth_radius / (earth_radius + alt))
-        sat_footprints = []
-        for hx, hy, hz in cartesian_rotation(lat, lon, horizon_radius, steps=int(self.width() / 10)):
-            lat, lon = cartesian_to_latlon(hx, hy, hz)
-            sat_footprints.append(QPointF(lon + 180, -lat + 90))
+        # noinspection PyBroadException
+        try:
+            lon, lat, alt = self.orb.get_lonlatalt(now)
+            alt *= 1000
+            earth_radius = earth_radius_at_latitude(lat)
+            horizon_radius = acos(earth_radius / (earth_radius + alt))
+            sat_footprints = []
+            for hx, hy, hz in cartesian_rotation(lat, lon, horizon_radius, steps=int(self.width() / 10)):
+                lat, lon = cartesian_to_latlon(hx, hy, hz)
+                sat_footprints.append(QPointF(lon + 180, -lat + 90))
 
-        return sat_footprints
+            return sat_footprints
+        except BaseException as e:
+            return None
 
 
 def from_latlon(lat, lon, width, height):

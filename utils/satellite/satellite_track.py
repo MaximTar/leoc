@@ -1,9 +1,11 @@
 from datetime import datetime, timedelta
 
 from PyQt5.QtGui import QPainter, QPainterPath
-from PyQt5.QtCore import Qt, QPointF
+from PyQt5.QtCore import Qt, QPointF, QTimer
 from PyQt5.QtWidgets import QWidget
 from utils.qpoints_utils import *
+
+
 # import sys  # Suppressing the error messages
 #
 #
@@ -20,23 +22,26 @@ class SatelliteTrack(QWidget):
         super().__init__()
         self.orb = orb
         self.points = self.__create_points_array()
-        self.update()
+        self.no_points = False
+        if self.points is None:
+            self.no_points = True
 
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setPen(Qt.yellow)
 
-        scaled_points = qpoints_scaling(self.width(), self.height(), self.points)
+        if self.points is not None:
+            scaled_points = qpoints_scaling(self.width(), self.height(), self.points)
 
-        path = QPainterPath()
-        first = True
-        for p in scaled_points:
-            if first:
-                path.moveTo(p)
-                first = False
-            path.lineTo(p)
+            path = QPainterPath()
+            first = True
+            for p in scaled_points:
+                if first:
+                    path.moveTo(p)
+                    first = False
+                path.lineTo(p)
 
-        painter.drawPath(path)
+            painter.drawPath(path)
 
     def __create_points_array(self, step_minutes=10):
         revolutions_per_day = float(self.orb.tle.mean_motion)  # mean motion
@@ -48,14 +53,13 @@ class SatelliteTrack(QWidget):
         then = now - timedelta(minutes=revolution_time)
         later = now + timedelta(minutes=revolution_time)
         while then < later:
+            # noinspection PyBroadException
             try:
                 lon, lat, alt = self.orb.get_lonlatalt(then)
                 points.append(QPointF(lon + 180, -lat + 90))
                 then += timedelta(minutes=step_minutes / revolutions_per_day)
             except BaseException as e:
-                # TODO
-                print(str(e))
-                break
+                return None
 
         # extract points for only current revolution
         # TODO check if current position is in points

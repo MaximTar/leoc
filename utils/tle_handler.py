@@ -39,7 +39,6 @@ def remove_tle_by_name(name):
 def remove_tle_by_index(index):
     lines = get_all_lines()
     del lines[index * 3:index * 3 + 3]
-    print(lines)
     f = open(file_name, 'w')
     for line in lines:
         f.write(line)
@@ -116,6 +115,10 @@ def get_sat_id_by_name(name):
     return get_all_ids()[get_all_names().index(name)]
 
 
+def get_name_by_sat_id(sat_id):
+    return get_all_names()[get_all_ids().index(sat_id)]
+
+
 # preferred method
 def update_tle_by_index(index):
     lines = get_all_lines()
@@ -129,13 +132,11 @@ def update_tle_by_name(name):
 
 
 def update_tle_by_sat_id(sat_id):
-    print(get_all_ids())
     tle = get_tle_by_sat_id(sat_id)
     if tle is None:
         # TODO
         pass
     else:
-        print(tle)
         tle = ['{}\n'.format(e) for e in tle]
         lines = get_all_lines()
         idx = get_all_ids().index(sat_id)
@@ -199,6 +200,15 @@ def get_tle_by_sat_id(sat_id):
     if tle is None:
         tle = _get_spacetrack_tle(sat_id)
     return tle
+
+
+def is_sat_id(sat_id):
+    # noinspection PyBroadException
+    try:
+        sat_id = int(sat_id)
+    except BaseException as e:
+        return False
+    return sat_id > 0
 
 
 class TleHandler:

@@ -31,6 +31,11 @@ class MainWindow(QMainWindow):
         central_widget.setLayout(main_hbox)
         self.setCentralWidget(central_widget)
 
+        # update map every second TODO: move amount of seconds to the settings tab
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.update_map_widget)
+        self.timer.start(1000)
+
     def update_map_widget(self):
         tle_list = get_tle_list_by_names(self.tle_list_widget.checked_names_list)
         orb_list = get_orb_list_by_tle_list(tle_list)
@@ -39,16 +44,27 @@ class MainWindow(QMainWindow):
     def add_to_tle_list_widget(self, sat_id=None, tle=None):
         th = TleHandler()
         if sat_id is not None:
-            result = th.save_by_sat_id(sat_id)
+            if is_sat_id(sat_id):
+                result = th.save_by_sat_id(sat_id)
+            else:
+                QMessageBox.warning(self, "No TLE added", "Wrong satellite ID", QMessageBox.Ok)
+                return
+        elif tle is not None:
+            sat_id = tle[0].split(' ').pop(0)
+            if is_sat_id(sat_id):
+                result = th.save_by_tle(tle)
+            else:
+                QMessageBox.warning(self, "No TLE added", "Wrong satellite ID", QMessageBox.Ok)
+                return
         else:
-            result = th.save_by_tle(tle)
+            QMessageBox.warning(self, "No TLE added", "Something went wrong", QMessageBox.Ok)
+            return
 
         if result == th.Result.IS_NONE:
-            # TODO
-            pass
+            QMessageBox.warning(self, "No TLE added", "Something went wrong", QMessageBox.Ok)
         elif result == th.Result.ALREADY_EXISTS:
-            # TODO return sat_id to the user / get sat name
-            QMessageBox.information(self, "Find TLE by ID", "TLE already in list", QMessageBox.Ok)
+            sat_name = get_name_by_sat_id(sat_id)
+            QMessageBox.information(self, "Find TLE by ID", "{} TLE already in list".format(sat_name), QMessageBox.Ok)
         elif result == th.Result.SAVED:
             self.tle_list_widget.update_list()
 
