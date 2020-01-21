@@ -13,10 +13,10 @@ class ManualTleInputWidget(QMainWindow):
         vbox = QVBoxLayout()
         self.plain_text = QPlainTextEdit()
         self.plain_text.setPlaceholderText("Do not forget about satellite's name in the form: ID NAME\n"
-                                      "Example (3le or three-line element format):\n"
-                                      "39084 LANDSAT 8\n"
-                                      "1 39084U 13008A   20014.41168178  .00000045  00000-0  20099-4 0  9992\n"
-                                      "2 39084  98.2026  86.4885 0001270  80.9753 279.1593 14.57115650368125")
+                                           "Example (3le or three-line element format):\n"
+                                           "39084 LANDSAT 8\n"
+                                           "1 39084U 13008A   20014.41168178  .00000045  00000-0  20099-4 0  9992\n"
+                                           "2 39084  98.2026  86.4885 0001270  80.9753 279.1593 14.57115650368125")
         self.plain_text.setUndoRedoEnabled(False)
         vbox.addWidget(self.plain_text)
 

@@ -1,8 +1,10 @@
+import math
 import sys
 
 from PyQt5.QtWidgets import *
 
 from utils.widgets.manual_tle_input_widget import ManualTleInputWidget
+from utils.widgets.antenna_graph_widget import AntennaGraphWidget
 from utils.widgets.map_widget import MapWidget
 from utils.widgets.tle_list_widget import *
 from utils.satellite.satellite_footprint import *
@@ -17,10 +19,12 @@ class MainWindow(QMainWindow):
 
         self.map_widget = MapWidget()
         self.tle_list_widget = TleListWidget(self.update_map_widget)
+        self.antenna_graph_widget = AntennaGraphWidget()
 
         splitter = QSplitter(Qt.Horizontal)
         splitter.setStretchFactor(1, 1)
 
+        splitter.addWidget(self.antenna_graph_widget)
         splitter.addWidget(self.map_widget)
         splitter.addWidget(self.construct_right_widget())
 
