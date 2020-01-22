@@ -1,13 +1,15 @@
-import math
 import sys
 
+from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import *
 
-from utils.widgets.manual_tle_input_widget import ManualTleInputWidget
+from utils.widgets.antenna_control_widget import AntennaControlWidget
 from utils.widgets.antenna_graph_widget import AntennaGraphWidget
+from utils.widgets.antenna_pose_vel_widget import AntennaPosVelWidget
+from utils.widgets.antenna_time_widget import AntennaTimeWidget
+from utils.widgets.manual_tle_input_widget import ManualTleInputWidget
 from utils.widgets.map_widget import MapWidget
 from utils.widgets.tle_list_widget import *
-from utils.satellite.satellite_footprint import *
 
 
 class MainWindow(QMainWindow):
@@ -20,11 +22,23 @@ class MainWindow(QMainWindow):
         self.map_widget = MapWidget()
         self.tle_list_widget = TleListWidget(self.update_map_widget)
         self.antenna_graph_widget = AntennaGraphWidget()
+        self.antenna_pose_vel_widget = AntennaPosVelWidget()
+        self.antenna_control_widget = AntennaControlWidget()
+        self.antenna_time_widget = AntennaTimeWidget()
+
+        self.dt = None
+        dt_result = self.antenna_time_widget.get_time_delta()
+        if dt_result == AntennaTimeWidget.TimeResult.OK:
+            self.dt = self.antenna_time_widget.dt
+        elif dt_result == AntennaTimeWidget.TimeResult.SERVERS_UNAVAILABLE:
+            QMessageBox.warning(self, "No time received", "NTP servers are unavailable", QMessageBox.Ok)
+        elif dt_result == AntennaTimeWidget.TimeResult.NO_CONNECTION:
+            QMessageBox.warning(self, "No time received", "Check your internet connection", QMessageBox.Ok)
 
         splitter = QSplitter(Qt.Horizontal)
         splitter.setStretchFactor(1, 1)
 
-        splitter.addWidget(self.antenna_graph_widget)
+        splitter.addWidget(self.construct_left_widget())
         splitter.addWidget(self.map_widget)
         splitter.addWidget(self.construct_right_widget())
 
@@ -75,6 +89,15 @@ class MainWindow(QMainWindow):
     def remove_from_tle_list_widget(self, index):
         remove_tle_by_index(index)
         self.tle_list_widget.update_list()
+
+    def construct_left_widget(self):
+        splitter = QSplitter(Qt.Vertical)
+        splitter.setStretchFactor(1, 1)
+        splitter.addWidget(self.antenna_graph_widget)
+        splitter.addWidget(self.antenna_pose_vel_widget)
+        splitter.addWidget(self.antenna_control_widget)
+        splitter.addWidget(self.antenna_time_widget)
+        return splitter
 
     def construct_right_widget(self):
         right_widget = QWidget()

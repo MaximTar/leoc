@@ -1,8 +1,7 @@
-from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QWidget, QStackedLayout, QMessageBox
 
-from utils.satellite.satellite_footprint import SatelliteFootprint
-from utils.satellite.satellite_track import SatelliteTrack
+from utils.widgets.satellite_footprint import SatelliteFootprint
+from utils.widgets.satellite_track import SatelliteTrack
 
 
 class MapWidget(QWidget):
