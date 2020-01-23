@@ -3,6 +3,8 @@ import sys
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import *
 
+from parameters import *
+
 from utils.widgets.antenna_control_widget import AntennaControlWidget
 from utils.widgets.antenna_graph_widget import AntennaGraphWidget
 from utils.widgets.antenna_pose_vel_widget import AntennaPosVelWidget
@@ -26,9 +28,7 @@ class MainWindow(QMainWindow):
         self.antenna_pose_vel_widget = AntennaPosVelWidget()
         self.antenna_control_widget = AntennaControlWidget()
         self.antenna_time_widget = AntennaTimeWidget()
-        # TODO settings
-        # self.antenna_video_widget = AntennaVideoWidget("rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mov")
-        self.antenna_video_widget = AntennaVideoWidget("rtsp://10.55.64.20")
+        self.antenna_video_widget = AntennaVideoWidget(antenna_video_widget_address)
 
         self.dt = None
         dt_result = self.antenna_time_widget.get_time_delta()
@@ -53,10 +53,9 @@ class MainWindow(QMainWindow):
         central_widget.setLayout(main_hbox)
         self.setCentralWidget(central_widget)
 
-        # update map every second TODO: move amount of seconds to the settings tab
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_map_widget)
-        self.timer.start(1000)
+        self.timer.start(update_map_period)
 
     def update_map_widget(self):
         tle_list = get_tle_list_by_names(self.tle_list_widget.checked_names_list)
@@ -186,7 +185,7 @@ class MainWindow(QMainWindow):
                 update_tle_by_index(self.tle_list_widget.selectionModel().selectedIndexes()[0].row())
 
     def send_btn_clicked(self):
-        # TODO
+        # TODO INTERACTION
         pass
 
 

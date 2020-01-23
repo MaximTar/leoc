@@ -46,7 +46,7 @@ class AntennaTimeWidget(QGroupBox):
         self.ntp_server_changed()
 
     def sync_btn_clicked(self):
-        # TODO
+        # TODO INTERACTION
         pass
 
     def ntp_server_changed(self):

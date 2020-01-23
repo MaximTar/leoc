@@ -235,7 +235,7 @@ class TleHandler:
             return self.Result.ALREADY_EXISTS
         # TODO check sat_id
         elif sat_id is not None:
-            # TODO make something with freeze
+            # TODO make something with freeze (thread?)
             tle = _get_celestrak_tle(sat_id)
             if tle is None:
                 tle = _get_spacetrack_tle(sat_id)

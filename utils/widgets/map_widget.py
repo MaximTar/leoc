@@ -20,7 +20,7 @@ class MapWidget(QWidget):
             for orb in self.orb_list:
                 track = SatelliteTrack(orb)
                 footprint = SatelliteFootprint(orb)
-                # TODO warning will drop every time
+                # TODO warning will drop every time (uncheck after message)
                 if track.no_points:
                     QMessageBox.warning(self, "Warning", "No track available", QMessageBox.Ok)
                 elif footprint.no_points:

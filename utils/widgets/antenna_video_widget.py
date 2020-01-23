@@ -4,6 +4,8 @@ from PyQt5.QtCore import QThread, pyqtSignal, pyqtSlot, Qt
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import QHBoxLayout, QLabel, QWidget
 
+from parameters import *
+
 
 # TODO full screen mode
 class AntennaVideoWidget(QWidget):
@@ -54,8 +56,8 @@ class AntennaVideoWidget(QWidget):
                     h, w, ch = rgb_image.shape
                     bytes_per_line = ch * w
                     convert_to_qt_format = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888)
-                    # TODO settings
-                    p = convert_to_qt_format.scaled(320, 240, Qt.KeepAspectRatio)
+                    p = convert_to_qt_format.scaled(antenna_video_widget_min_width, antenna_video_widget_min_height,
+                                                    Qt.KeepAspectRatio)
                     self.change_pixmap.emit(p)
 
     def __init__(self, rtsp_uri):

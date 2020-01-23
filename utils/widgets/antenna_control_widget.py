@@ -1,5 +1,6 @@
 from PyQt5.QtWidgets import QGridLayout, QGroupBox, QLabel, QDoubleSpinBox, QPushButton
 
+from parameters import *
 
 class AntennaControlWidget(QGroupBox):
     def __init__(self):
@@ -13,14 +14,12 @@ class AntennaControlWidget(QGroupBox):
         main_layout.addWidget(QLabel("Elevation", self), 1, 0)
 
         azimuth_spinbox = QDoubleSpinBox(self)
-        # TODO move to the settings
-        azimuth_spinbox.setRange(-5, 5)
-        azimuth_spinbox.setSingleStep(0.1)
+        azimuth_spinbox.setRange(azimuth_spinbox_range_min, azimuth_spinbox_range_max)
+        azimuth_spinbox.setSingleStep(azimuth_spinbox_step)
 
         elevation_spinbox = QDoubleSpinBox(self)
-        # TODO move to the settings
-        elevation_spinbox.setRange(-5, 5)
-        elevation_spinbox.setSingleStep(0.1)
+        elevation_spinbox.setRange(elevation_spinbox_range_min, elevation_spinbox_range_max)
+        elevation_spinbox.setSingleStep(elevation_spinbox_step)
 
         # central column
         main_layout.addWidget(azimuth_spinbox, 0, 2)
@@ -46,13 +45,13 @@ class AntennaControlWidget(QGroupBox):
         self.setLayout(main_layout)
 
     def azimuth_btn_clicked(self):
-        # TODO
+        # TODO INTERACTION
         pass
 
     def elevation_btn_clicked(self):
-        # TODO
+        # TODO INTERACTION
         pass
 
     def save_btn_clicked(self):
-        # TODO
+        # TODO INTERACTION
         pass
