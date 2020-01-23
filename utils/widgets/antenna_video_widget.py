@@ -2,7 +2,7 @@ import cv2
 import time
 from PyQt5.QtCore import QThread, pyqtSignal, pyqtSlot, Qt
 from PyQt5.QtGui import QImage, QPixmap
-from PyQt5.QtWidgets import QLabel, QWidget, QHBoxLayout, QSizePolicy
+from PyQt5.QtWidgets import QHBoxLayout, QLabel, QWidget
 
 
 # TODO full screen mode

@@ -1,18 +1,16 @@
-from PyQt5.QtWidgets import QGroupBox, QHBoxLayout, QVBoxLayout, QLabel, QDoubleSpinBox, QPushButton, QWidget
+from PyQt5.QtWidgets import QGridLayout, QGroupBox, QLabel, QDoubleSpinBox, QPushButton
 
 
 class AntennaControlWidget(QGroupBox):
     def __init__(self):
         super().__init__()
         # self.setTitle("Change antenna's azimuth and/or elevation offset")
-        main_layout = QHBoxLayout()
-        left_layout = QVBoxLayout()
-        central_layout = QVBoxLayout()
-        right_layout = QVBoxLayout()
 
-        left_layout.addWidget(QLabel("Azimuth", self))
-        left_layout.addWidget(QLabel("Elevation", self))
-        left_layout.addWidget(QLabel("", self))
+        main_layout = QGridLayout()
+
+        # left column
+        main_layout.addWidget(QLabel("Azimuth", self), 0, 0)
+        main_layout.addWidget(QLabel("Elevation", self), 1, 0)
 
         azimuth_spinbox = QDoubleSpinBox(self)
         # TODO move to the settings
@@ -24,9 +22,9 @@ class AntennaControlWidget(QGroupBox):
         elevation_spinbox.setRange(-5, 5)
         elevation_spinbox.setSingleStep(0.1)
 
-        central_layout.addWidget(azimuth_spinbox)
-        central_layout.addWidget(elevation_spinbox)
-        central_layout.addWidget(QLabel("", self))
+        # central column
+        main_layout.addWidget(azimuth_spinbox, 0, 2)
+        main_layout.addWidget(elevation_spinbox, 1, 2)
 
         azimuth_btn = QPushButton("Set", self)
         azimuth_btn.setToolTip("Set azimuth offset")
@@ -40,19 +38,10 @@ class AntennaControlWidget(QGroupBox):
         save_btn.setToolTip("Save changes on controller")
         save_btn.clicked.connect(self.save_btn_clicked)
 
-        right_layout.addWidget(azimuth_btn)
-        right_layout.addWidget(elevation_btn)
-        right_layout.addWidget(save_btn)
-
-        left_widget = QWidget()
-        central_widget = QWidget()
-        right_widget = QWidget()
-        left_widget.setLayout(left_layout)
-        central_widget.setLayout(central_layout)
-        right_widget.setLayout(right_layout)
-        main_layout.addWidget(left_widget)
-        main_layout.addWidget(central_widget)
-        main_layout.addWidget(right_widget)
+        # right column
+        main_layout.addWidget(azimuth_btn, 0, 4)
+        main_layout.addWidget(elevation_btn, 1, 4)
+        main_layout.addWidget(save_btn, 2, 4)
 
         self.setLayout(main_layout)
 

@@ -1,40 +1,32 @@
-from PyQt5.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QGroupBox
+from PyQt5.QtWidgets import QGridLayout, QGroupBox, QLabel
 
 
 class AntennaPosVelWidget(QGroupBox):
     def __init__(self):
         super().__init__()
         # self.setTitle("Antenna's desired and real poses and velocities")
-        main_layout = QHBoxLayout()
-        left_layout = QVBoxLayout()
-        central_layout = QVBoxLayout()
-        right_layout = QVBoxLayout()
 
-        left_layout.addWidget(QLabel("", self))
-        left_layout.addWidget(QLabel("Pose", self))
-        left_layout.addWidget(QLabel("Velocity", self))
+        main_layout = QGridLayout()
+
+        # left column
+        main_layout.addWidget(QLabel("Pose", self), 1, 0)
+        main_layout.addWidget(QLabel("Velocity", self), 2, 0)
 
         self.des_pose_label = QLabel("", self)
         self.des_vel_label = QLabel("", self)
-        central_layout.addWidget(QLabel("Desired", self))
-        central_layout.addWidget(self.des_pose_label)
-        central_layout.addWidget(self.des_vel_label)
+
+        # central column
+        main_layout.addWidget(QLabel("Desired", self), 0, 2)
+        main_layout.addWidget(self.des_pose_label, 1, 2)
+        main_layout.addWidget(self.des_vel_label, 2, 2)
 
         self.real_pose_label = QLabel("", self)
         self.real_vel_label = QLabel("", self)
-        right_layout.addWidget(QLabel("Real", self))
-        right_layout.addWidget(self.real_pose_label)
-        right_layout.addWidget(self.real_vel_label)
 
-        left_widget = QWidget()
-        central_widget = QWidget()
-        right_widget = QWidget()
-        left_widget.setLayout(left_layout)
-        central_widget.setLayout(central_layout)
-        right_widget.setLayout(right_layout)
-        main_layout.addWidget(left_widget)
-        main_layout.addWidget(central_widget)
-        main_layout.addWidget(right_widget)
+        # right column
+        main_layout.addWidget(QLabel("Real", self), 0, 4)
+        main_layout.addWidget(self.real_pose_label, 1, 4)
+        main_layout.addWidget(self.real_vel_label, 2, 4)
 
         self.setLayout(main_layout)
         # TODO update_methods

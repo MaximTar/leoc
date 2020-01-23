@@ -2,9 +2,9 @@ from datetime import datetime
 from enum import Enum
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QComboBox, QGridLayout, QGroupBox, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
+from PyQt5.QtWidgets import QComboBox, QGridLayout, QGroupBox, QLabel, QPushButton
 
-from utils.time_handler import ntplib_ntp_time, ntp_time
+from utils.time_handler import ntplib_ntp_time
 from utils.internet_handler import ping
 
 
@@ -20,18 +20,15 @@ class AntennaTimeWidget(QGroupBox):
 
         self.dt = None
 
-        # TODO (and other antenna_widgets)
-        # main_layout = QGridLayout()
-        main_layout = QHBoxLayout()
-        left_layout = QVBoxLayout()
-        right_layout = QVBoxLayout()
+        main_layout = QGridLayout()
 
         self.ntp_servers_cbx = QComboBox(self)
         self.ntp_servers_cbx.addItems(["ntp1.vniiftri.ru", "ntp2.vniiftri.ru", "ntp3.vniiftri.ru", "ntp21.vniiftri.ru"])
         self.ntp_servers_cbx.currentIndexChanged.connect(self.ntp_server_changed)
-        left_layout.addWidget(self.ntp_servers_cbx)
-        left_layout.addWidget(QLabel("Antenna", self))
-        left_layout.addWidget(QLabel("", self))
+
+        # left column
+        main_layout.addWidget(self.ntp_servers_cbx, 0, 0)
+        main_layout.addWidget(QLabel("Antenna", self), 1, 0)
 
         self.ntp_time_lbl = QLabel("", self)
         self.ntp_time_lbl.setAlignment(Qt.AlignVCenter)
@@ -40,16 +37,10 @@ class AntennaTimeWidget(QGroupBox):
         sync_btn.setToolTip("Synchronize time")
         sync_btn.clicked.connect(self.sync_btn_clicked)
 
-        right_layout.addWidget(self.ntp_time_lbl)
-        right_layout.addWidget(antenna_time_lbl)
-        right_layout.addWidget(sync_btn)
-
-        left_widget = QWidget()
-        right_widget = QWidget()
-        left_widget.setLayout(left_layout)
-        right_widget.setLayout(right_layout)
-        main_layout.addWidget(left_widget)
-        main_layout.addWidget(right_widget)
+        # right column
+        main_layout.addWidget(self.ntp_time_lbl, 0, 2)
+        main_layout.addWidget(antenna_time_lbl, 1, 2)
+        main_layout.addWidget(sync_btn, 2, 2)
 
         self.setLayout(main_layout)
         self.ntp_server_changed()
