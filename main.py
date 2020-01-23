@@ -7,6 +7,7 @@ from utils.widgets.antenna_control_widget import AntennaControlWidget
 from utils.widgets.antenna_graph_widget import AntennaGraphWidget
 from utils.widgets.antenna_pose_vel_widget import AntennaPosVelWidget
 from utils.widgets.antenna_time_widget import AntennaTimeWidget
+from utils.widgets.antenna_video_widget import AntennaVideoWidget
 from utils.widgets.manual_tle_input_widget import ManualTleInputWidget
 from utils.widgets.map_widget import MapWidget
 from utils.widgets.tle_list_widget import *
@@ -25,6 +26,9 @@ class MainWindow(QMainWindow):
         self.antenna_pose_vel_widget = AntennaPosVelWidget()
         self.antenna_control_widget = AntennaControlWidget()
         self.antenna_time_widget = AntennaTimeWidget()
+        # TODO settings
+        # self.antenna_video_widget = AntennaVideoWidget("rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mov")
+        self.antenna_video_widget = AntennaVideoWidget("rtsp://10.55.64.20")
 
         self.dt = None
         dt_result = self.antenna_time_widget.get_time_delta()
@@ -97,6 +101,7 @@ class MainWindow(QMainWindow):
         splitter.addWidget(self.antenna_pose_vel_widget)
         splitter.addWidget(self.antenna_control_widget)
         splitter.addWidget(self.antenna_time_widget)
+        splitter.addWidget(self.antenna_video_widget)
         return splitter
 
     def construct_right_widget(self):
