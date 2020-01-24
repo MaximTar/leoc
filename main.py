@@ -15,6 +15,7 @@ from utils.widgets.map_widget import MapWidget
 from utils.widgets.tle_list_widget import *
 
 
+# noinspection PyUnresolvedReferences,PyCallByClass,PyArgumentList
 class MainWindow(QMainWindow):
 
     def __init__(self):
@@ -150,6 +151,7 @@ class MainWindow(QMainWindow):
             if ok:
                 self.add_to_tle_list_widget(sat_id=sat_id)
         elif add_box.clickedButton() == manual_btn:
+            # noinspection PyTypeChecker
             ManualTleInputWidget(parent=self, parent_slot=self.add_to_tle_list_widget)
 
     def remove_btn_clicked(self):
@@ -189,9 +191,18 @@ class MainWindow(QMainWindow):
         pass
 
 
+def check_parameters():
+    return azimuth_spinbox_range_min < azimuth_spinbox_range_max \
+           and elevation_spinbox_range_min < elevation_spinbox_range_max
+
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     main = MainWindow()
-    main.show()
+    if check_parameters():
+        main.show()
+    else:
+        # noinspection PyArgumentList
+        QMessageBox.critical(None, "Error", "Check parameters!", QMessageBox.Ok)
     sys.exit(app.exec_())

@@ -70,8 +70,9 @@ def get_all_full_names():
 def get_all_ids():
     ids = []
     for fn in get_all_full_names():
-        # TODO check if int
-        ids.append(fn.split(' ')[0])
+        sat_id = fn.split(' ')[0]
+        if is_sat_id(sat_id):
+            ids.append(fn.split(' ')[0])
     return ids
 
 
@@ -79,8 +80,8 @@ def get_all_names():
     names = []
     for fn in get_all_full_names():
         fn = fn.rstrip().split(' ')
-        # TODO check if int
-        fn.pop(0)
+        if is_sat_id(fn[0]):
+            fn.pop(0)
         names.append(' '.join(fn))
     return names
 
@@ -88,7 +89,6 @@ def get_all_names():
 def get_tle_by_name(name):
     name_idx = get_all_names().index(name)
     lines = get_all_lines()
-    # TODO exception
     return lines[name_idx * 3 + 1], lines[name_idx * 3 + 2]
 
 
@@ -122,9 +122,12 @@ def get_name_by_sat_id(sat_id):
 # preferred method
 def update_tle_by_index(index):
     lines = get_all_lines()
-    sat_id = lines[index * 3].split(' ').pop(0)
-    # TODO check sat_id
-    update_tle_by_sat_id(sat_id)
+    if is_sat_id(lines[index * 3].split(' ')[0]):
+        sat_id = lines[index * 3].split(' ').pop(0)
+        update_tle_by_sat_id(sat_id)
+    else:
+        # TODO message?
+        pass
 
 
 def update_tle_by_name(name):
@@ -134,7 +137,7 @@ def update_tle_by_name(name):
 def update_tle_by_sat_id(sat_id):
     tle = get_tle_by_sat_id(sat_id)
     if tle is None:
-        # TODO
+        # TODO message?
         pass
     else:
         tle = ['{}\n'.format(e) for e in tle]
@@ -148,6 +151,7 @@ def update_tle_by_sat_id(sat_id):
 def update_all_tles():
     ids = get_all_ids()
     for sat_id in ids:
+        # TODO write another method (now this rewrite file for every TLE)
         update_tle_by_sat_id(sat_id)
 
 
@@ -193,9 +197,8 @@ def _get_celestrak_tle(sat_id):
 
 
 def get_tle_by_sat_id(sat_id):
-    if sat_id is None:
+    if sat_id is None or not is_sat_id(sat_id):
         return None
-    # TODO check sat_id
     tle = _get_celestrak_tle(sat_id)
     if tle is None:
         tle = _get_spacetrack_tle(sat_id)
@@ -220,20 +223,24 @@ class TleHandler:
     def save_by_tle(self, tle):
         if tle is None:
             return self.Result.IS_NONE
-        # TODO check if pop is int
-        elif tle is not None and str(tle[0].split(' ').pop(0)) in get_all_ids():
-            return self.Result.ALREADY_EXISTS
-        elif tle is not None:
-            # TODO add TLE check
-            save_tle(tle)
-            return self.Result.SAVED
+        else:
+            sat_id = tle[0].split(' ')[0]
+        if is_sat_id(sat_id):
+            if tle is not None and str(sat_id) in get_all_ids():
+                return self.Result.ALREADY_EXISTS
+            elif tle is not None:
+                tle[0].split(' ').pop(0)
+                # TODO add TLE check
+                save_tle(tle)
+                return self.Result.SAVED
+        else:
+            return self.Result.IS_NONE
 
     def save_by_sat_id(self, sat_id):
-        if sat_id is None:
+        if sat_id is None or not is_sat_id(sat_id):
             return self.Result.IS_NONE
         elif sat_id is not None and str(sat_id) in get_all_ids():
             return self.Result.ALREADY_EXISTS
-        # TODO check sat_id
         elif sat_id is not None:
             # TODO make something with freeze (thread?)
             tle = _get_celestrak_tle(sat_id)

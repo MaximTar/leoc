@@ -5,7 +5,6 @@ antenna_video_widget_min_height = 240
 
 update_map_period = 1000  # [milliseconds]
 
-# TODO check if min < max
 azimuth_spinbox_range_min = -5
 azimuth_spinbox_range_max = 5
 azimuth_spinbox_step = 0.1
