@@ -62,8 +62,8 @@ class SatelliteTrack(QWidget):
                 return None
 
         # extract points for only current revolution
-        # TODO check if current position is in points
-        # TODO think about 0/360 longitude
+        # TODO AFTER check if current position is in points
+        # TODO AFTER think about 0/360 longitude
         revolution_points = []
         current = False
         for i in range(len(points) - 1):

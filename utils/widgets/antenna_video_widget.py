@@ -7,12 +7,11 @@ from PyQt5.QtWidgets import QHBoxLayout, QLabel, QWidget
 from parameters import *
 
 
-# TODO full screen mode
+# TODO AFTER full screen mode
 class AntennaVideoWidget(QWidget):
     class RtspThread(QThread):
         change_pixmap = pyqtSignal(QImage)
 
-        # TODO think about moving methods from handler to the thread class
         class RtspHandler:
             def __init__(self, rtsp_uri):
                 self.rtsp_uri = rtsp_uri

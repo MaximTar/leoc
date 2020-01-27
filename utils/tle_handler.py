@@ -7,6 +7,7 @@ from requests import get
 from spacetrack import SpaceTrackClient
 
 # Work with indexes and satellite identifiers is preferable, since names can be duplicated
+import deprecation
 
 ST_USERNAME = "max_131092@mail.ru"
 ST_PASSWORD = "Acslacslacslacsl"
@@ -26,19 +27,22 @@ def save_tle(tle):
         f.close()
 
 
-def remove_tle_by_name(name):
-    name_idx = get_all_names().index(name)
+def remove_tle_by_index(index):
     lines = get_all_lines()
-    del lines[name_idx * 3:name_idx * 3 + 3]
+    del lines[index * 3:index * 3 + 3]
     f = open(file_name, 'w')
     for line in lines:
         f.write(line)
     f.close()
 
 
-def remove_tle_by_index(index):
+@deprecation.deprecated(deprecated_in="0.1", removed_in="1.0",
+                        current_version="0.1",
+                        details="Use the remove_tle_by_index() instead")
+def remove_tle_by_name(name):
+    name_idx = get_all_names().index(name)
     lines = get_all_lines()
-    del lines[index * 3:index * 3 + 3]
+    del lines[name_idx * 3:name_idx * 3 + 3]
     f = open(file_name, 'w')
     for line in lines:
         f.write(line)
@@ -86,16 +90,34 @@ def get_all_names():
     return names
 
 
+@deprecation.deprecated(deprecated_in="0.1", removed_in="1.0",
+                        current_version="0.1",
+                        details="Use the get_tle_by_index() instead")
 def get_tle_by_name(name):
     name_idx = get_all_names().index(name)
     lines = get_all_lines()
     return lines[name_idx * 3 + 1], lines[name_idx * 3 + 2]
 
 
+def get_tle_by_index(index):
+    lines = get_all_lines()
+    return lines[index * 3 + 1], lines[index * 3 + 2]
+
+
+@deprecation.deprecated(deprecated_in="0.1", removed_in="1.0",
+                        current_version="0.1",
+                        details="Use the get_tle_list_by_indices() instead")
 def get_tle_list_by_names(names):
     tle_list = []
     for name in names:
         tle_list.append(get_tle_by_name(name))
+    return tle_list
+
+
+def get_tle_list_by_indices(indices):
+    tle_list = []
+    for idx in indices:
+        tle_list.append(get_tle_by_index(idx))
     return tle_list
 
 
@@ -119,17 +141,18 @@ def get_name_by_sat_id(sat_id):
     return get_all_names()[get_all_ids().index(sat_id)]
 
 
-# preferred method
 def update_tle_by_index(index):
     lines = get_all_lines()
     if is_sat_id(lines[index * 3].split(' ')[0]):
         sat_id = lines[index * 3].split(' ').pop(0)
-        update_tle_by_sat_id(sat_id)
+        return update_tle_by_sat_id(sat_id)
     else:
-        # TODO message?
-        pass
+        return str(lines[index * 3].split(' ')[0])
 
 
+@deprecation.deprecated(deprecated_in="0.1", removed_in="1.0",
+                        current_version="0.1",
+                        details="Use the update_tle_by_index()/update_tle_by_sat_id() instead")
 def update_tle_by_name(name):
     update_tle_by_sat_id(get_sat_id_by_name(name))
 
@@ -137,8 +160,7 @@ def update_tle_by_name(name):
 def update_tle_by_sat_id(sat_id):
     tle = get_tle_by_sat_id(sat_id)
     if tle is None:
-        # TODO message?
-        pass
+        return str(sat_id)
     else:
         tle = ['{}\n'.format(e) for e in tle]
         lines = get_all_lines()
@@ -150,9 +172,13 @@ def update_tle_by_sat_id(sat_id):
 
 def update_all_tles():
     ids = get_all_ids()
+    sat_ids = []
     for sat_id in ids:
-        # TODO write another method (now this rewrite file for every TLE)
-        update_tle_by_sat_id(sat_id)
+        # TODO AFTER write another method (now this rewrite file for every TLE)
+        ret = update_tle_by_sat_id(sat_id)
+        if ret:
+            sat_ids.append(str(ret))
+    return sat_ids
 
 
 def _get_spacetrack_tle(sat_id, start_date=None, end_date=None, username=ST_USERNAME, password=ST_PASSWORD,
@@ -209,9 +235,41 @@ def is_sat_id(sat_id):
     # noinspection PyBroadException
     try:
         sat_id = int(sat_id)
-    except BaseException as e:
+    except BaseException:
         return False
     return sat_id > 0
+
+
+def is_tle(tle):
+    if len(tle) == 2:
+        first_line = tle[0]
+        second_line = tle[1]
+    elif len(tle) == 3:
+        first_line = tle[1]
+        second_line = tle[2]
+    else:
+        return False
+    # noinspection PyBroadException
+    try:
+        if int(first_line[0]) == 1 \
+            and isinstance(int(first_line[2:7]), int) \
+            and isinstance(int(first_line[9:14]), int) \
+            and isinstance(int(first_line[18:20]), int) \
+            and isinstance(float(first_line[20:32]), float) \
+            and isinstance(float(first_line[33:43]), float) \
+            and int(first_line[62]) == 0 \
+            and isinstance(int(first_line[64:69]), int) \
+            and int(second_line[0]) == 2 \
+            and isinstance(int(second_line[2:7]), int) \
+            and isinstance(float(second_line[8:16]), float) \
+            and isinstance(float(second_line[17:25]), float) \
+            and isinstance(float(second_line[34:42]), float) \
+            and isinstance(float(second_line[43:51]), float) \
+            and isinstance(float(second_line[52:63]), float) \
+            and isinstance(int(second_line[63:69]), int):
+            return True
+    except BaseException:
+        return False
 
 
 class TleHandler:
@@ -230,9 +288,11 @@ class TleHandler:
                 return self.Result.ALREADY_EXISTS
             elif tle is not None:
                 tle[0].split(' ').pop(0)
-                # TODO add TLE check
-                save_tle(tle)
-                return self.Result.SAVED
+                if is_tle(tle):
+                    save_tle(tle)
+                    return self.Result.SAVED
+                else:
+                    return self.Result.IS_NONE
         else:
             return self.Result.IS_NONE
 
@@ -242,7 +302,7 @@ class TleHandler:
         elif sat_id is not None and str(sat_id) in get_all_ids():
             return self.Result.ALREADY_EXISTS
         elif sat_id is not None:
-            # TODO make something with freeze (thread?)
+            # TODO AFTER make something with freeze (thread?)
             tle = _get_celestrak_tle(sat_id)
             if tle is None:
                 tle = _get_spacetrack_tle(sat_id)

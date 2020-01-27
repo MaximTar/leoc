@@ -5,8 +5,11 @@ from utils.widgets.satellite_track import SatelliteTrack
 
 
 class MapWidget(QWidget):
-    def __init__(self, orb_list=None):
+    def __init__(self, orb_list=None, slot=None, idx_list=None):
         super().__init__()
+        self.uncheck_slot = slot
+        self.idx_list = idx_list
+
         self.orb_list = orb_list
 
         self.stacked_layout = QStackedLayout()
@@ -20,11 +23,16 @@ class MapWidget(QWidget):
             for orb in self.orb_list:
                 track = SatelliteTrack(orb)
                 footprint = SatelliteFootprint(orb)
-                # TODO warning will drop every time (uncheck after message)
                 if track.no_points:
                     QMessageBox.warning(self, "Warning", "No track available", QMessageBox.Ok)
+                    if self.uncheck_slot and self.idx_list:
+                        idx = orb_list.index(orb)
+                        self.uncheck_slot(self.idx_list[idx])
                 elif footprint.no_points:
                     QMessageBox.warning(self, "Warning", "No footprint available", QMessageBox.Ok)
+                    if self.uncheck_slot and self.idx_list:
+                        idx = orb_list.index(orb)
+                        self.uncheck_slot(self.idx_list[idx])
                 else:
                     self.stacked_layout.addWidget(track)
                     self.stacked_layout.addWidget(footprint)
@@ -44,8 +52,14 @@ class MapWidget(QWidget):
             footprint = SatelliteFootprint(orb)
             if track.no_points:
                 QMessageBox.warning(self, "Warning", "No track available", QMessageBox.Ok)
+                if self.uncheck_slot and self.idx_list:
+                    idx = orb_list.index(orb)
+                    self.uncheck_slot(self.idx_list[idx])
             elif footprint.no_points:
                 QMessageBox.warning(self, "Warning", "No footprint available", QMessageBox.Ok)
+                if self.uncheck_slot and self.idx_list:
+                    idx = orb_list.index(orb)
+                    self.uncheck_slot(self.idx_list[idx])
             else:
                 self.stacked_layout.addWidget(track)
                 self.stacked_layout.addWidget(footprint)
@@ -53,3 +67,8 @@ class MapWidget(QWidget):
         # for i in reversed(range(self.stacked_layout.count())):
         for i in (range(self.stacked_layout.count())):
             self.stacked_layout.setCurrentIndex(i)
+
+    def set_uncheck_list_and_slot(self, idx_list, slot):
+        if slot is not None and idx_list is not None:
+            self.idx_list = idx_list
+            self.uncheck_slot = slot

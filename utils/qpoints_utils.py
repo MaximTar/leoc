@@ -13,3 +13,8 @@ def qpoints_scaling(width, height, points):
 def qpoints_distance(pt1, pt2):
     line = QLineF(pt1, pt2)
     return line.length()
+
+
+def print_array(points):
+    for p in points:
+        print(p.x(), p.y())

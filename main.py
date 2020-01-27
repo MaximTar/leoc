@@ -31,6 +31,8 @@ class MainWindow(QMainWindow):
         self.antenna_time_widget = AntennaTimeWidget()
         self.antenna_video_widget = AntennaVideoWidget(antenna_video_widget_address)
 
+        self.map_widget.set_uncheck_list_and_slot(self.tle_list_widget.checked_indices_list, self.tle_list_widget.uncheck_item)
+
         self.dt = None
         dt_result = self.antenna_time_widget.get_time_delta()
         if dt_result == AntennaTimeWidget.TimeResult.OK:
@@ -59,7 +61,7 @@ class MainWindow(QMainWindow):
         self.timer.start(update_map_period)
 
     def update_map_widget(self):
-        tle_list = get_tle_list_by_names(self.tle_list_widget.checked_names_list)
+        tle_list = get_tle_list_by_indices(self.tle_list_widget.checked_indices_list)
         orb_list = get_orb_list_by_tle_list(tle_list)
         self.map_widget.update_map(orb_list)
 
@@ -179,12 +181,18 @@ class MainWindow(QMainWindow):
         update_box.exec()
 
         if update_box.clickedButton() == all_btn:
-            update_all_tles()
+            ret = update_all_tles()
+            if ret:
+                QMessageBox.information(self, "Something is wrong", ', '.join(ret) + "is not satellite IDs",
+                                        QMessageBox.Ok)
         elif update_box.clickedButton() == selected_btn:
             if not self.tle_list_widget.selectedItems():
                 QMessageBox.information(self, "Update TLE", "No TLE selected", QMessageBox.Ok)
             else:
-                update_tle_by_index(self.tle_list_widget.selectionModel().selectedIndexes()[0].row())
+                ret = update_tle_by_index(self.tle_list_widget.selectionModel().selectedIndexes()[0].row())
+                if ret:
+                    QMessageBox.information(self, "Something is wrong", str(ret) + "is not satellite ID",
+                                            QMessageBox.Ok)
 
     def send_btn_clicked(self):
         # TODO INTERACTION

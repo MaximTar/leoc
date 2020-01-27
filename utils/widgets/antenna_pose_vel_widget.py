@@ -29,4 +29,4 @@ class AntennaPosVelWidget(QGroupBox):
         main_layout.addWidget(self.real_vel_label, 2, 4)
 
         self.setLayout(main_layout)
-        # TODO update_methods
+        # TODO INTERACTION (update_methods)

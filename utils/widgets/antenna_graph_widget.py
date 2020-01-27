@@ -8,7 +8,7 @@ class AntennaGraphWidget(QWidget):
     def __init__(self):
         super().__init__()
 
-        # TODO move numbers/colors to settings
+        # TODO AFTER move numbers/colors to settings
         pg.setConfigOption('background', 'w')
         pg.setConfigOption('foreground', 'k')
 

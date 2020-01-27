@@ -1,12 +1,28 @@
 from datetime import datetime
 from math import acos, atan2, cos, degrees, radians, sin, sqrt
-from PyQt5.QtCore import Qt, QPointF, QTimer
+from PyQt5.QtCore import Qt, QPointF
 from PyQt5.QtGui import QPainter, QPainterPath, QPolygon
 from PyQt5.QtWidgets import QWidget
-from utils.qpoints_utils import qpoints_scaling
+from utils.qpoints_utils import *
 
 EARTH_FLATTENING_COEFFICIENT = 0.003352891869237217
 EARTH_RADIUS = 6378135
+
+
+def _create_path(path, points, first=True, offset=0, full_range=True):
+    if full_range:
+        end = len(points)
+    else:
+        end = len(points) - 1
+    for i in range(offset, end):
+        if first:
+            path.moveTo(points[i])
+            first = False
+        path.lineTo(points[i])
+        if not full_range and qpoints_distance(points[i], points[i + 1]) > 100:
+            offset = i + 1
+            break
+    return path, offset
 
 
 class SatelliteFootprint(QWidget):
@@ -23,19 +39,33 @@ class SatelliteFootprint(QWidget):
         painter.setPen(Qt.yellow)
 
         if self.points is not None:
+            gap_counter = 0
+            for i in range(len(self.points) - 1):
+                if qpoints_distance(self.points[i], self.points[i + 1]) > 100:
+                    gap_counter += 1
             scaled_points = qpoints_scaling(self.width(), self.height(), self.points)
+            sorted_points = sorted(scaled_points, key=lambda point: point.x())
 
-            # TODO FIXME (when trajectory goes through edge/intersects zero)
-            # path = QPainterPath()
-            # first = True
-            # for p in scaled_points:
-            #     if first:
-            #         path.moveTo(p)
-            #         first = False
-            #     path.lineTo(p)
+            # ordinary case
+            if gap_counter == 0:
+                painter.drawPolygon(QPolygon(scaled_points))
+            # near the pole
+            # TODO close and fill
+            elif gap_counter == 1:
+                path = QPainterPath()
+                path, offset = _create_path(path, sorted_points)
+                painter.drawPath(path)
+            # footprint goes through edge/intersects zero
+            # TODO close and fill
+            elif gap_counter == 2:
+                first_path = QPainterPath()
+                second_path = QPainterPath()
+                first_path, offset = _create_path(first_path, scaled_points, full_range=False)
+                second_path, offset = _create_path(second_path, scaled_points, offset=offset, full_range=False)
+                first_path, offset = _create_path(first_path, scaled_points, False, offset, True)
 
-            painter.drawPolygon(QPolygon(scaled_points))
-        # painter.drawPath(path)
+                painter.drawPath(first_path)
+                painter.drawPath(second_path)
 
     def __create_points_array(self):
         """
@@ -54,7 +84,7 @@ class SatelliteFootprint(QWidget):
                 sat_footprints.append(QPointF(lon + 180, -lat + 90))
 
             return sat_footprints
-        except BaseException as e:
+        except BaseException:
             return None
 
 
