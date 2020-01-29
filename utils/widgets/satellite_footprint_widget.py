@@ -25,7 +25,7 @@ def _create_path(path, points, first=True, offset=0, full_range=True):
     return path, offset
 
 
-class SatelliteFootprint(QWidget):
+class SatelliteFootprintWidget(QWidget):
     def __init__(self, orb):
         super().__init__()
         self.orb = orb
@@ -50,13 +50,13 @@ class SatelliteFootprint(QWidget):
             if gap_counter == 0:
                 painter.drawPolygon(QPolygon(scaled_points))
             # near the pole
-            # TODO close and fill
+            # TODO AFTER close and fill
             elif gap_counter == 1:
                 path = QPainterPath()
                 path, offset = _create_path(path, sorted_points)
                 painter.drawPath(path)
             # footprint goes through edge/intersects zero
-            # TODO close and fill
+            # TODO AFTER close and fill
             elif gap_counter == 2:
                 first_path = QPainterPath()
                 second_path = QPainterPath()

@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QStackedLayout, QMessageBox
 
-from utils.widgets.satellite_footprint import SatelliteFootprint
-from utils.widgets.satellite_track import SatelliteTrack
+from utils.widgets.satellite_footprint_widget import SatelliteFootprintWidget
+from utils.widgets.satellite_track_widget import SatelliteTrackWidget
 
 
 class MapWidget(QWidget):
@@ -21,8 +21,8 @@ class MapWidget(QWidget):
 
         if self.orb_list is not None:
             for orb in self.orb_list:
-                track = SatelliteTrack(orb)
-                footprint = SatelliteFootprint(orb)
+                track = SatelliteTrackWidget(orb)
+                footprint = SatelliteFootprintWidget(orb)
                 if track.no_points:
                     QMessageBox.warning(self, "Warning", "No track available", QMessageBox.Ok)
                     if self.uncheck_slot and self.idx_list:
@@ -48,8 +48,8 @@ class MapWidget(QWidget):
         # not sure, that this is a good solution
         # insert before background
         for orb in orb_list:
-            track = SatelliteTrack(orb)
-            footprint = SatelliteFootprint(orb)
+            track = SatelliteTrackWidget(orb)
+            footprint = SatelliteFootprintWidget(orb)
             if track.no_points:
                 QMessageBox.warning(self, "Warning", "No track available", QMessageBox.Ok)
                 if self.uncheck_slot and self.idx_list:

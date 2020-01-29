@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import QGridLayout, QGroupBox, QLabel, QDoubleSpinBox, QPus
 
 from parameters import *
 
+
 class AntennaControlWidget(QGroupBox):
     def __init__(self):
         super().__init__()

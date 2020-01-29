@@ -6,18 +6,7 @@ from PyQt5.QtWidgets import QWidget
 from utils.qpoints_utils import *
 
 
-# import sys  # Suppressing the error messages
-#
-#
-# class DevNull:
-#     def write(self, msg):
-#         pass
-#
-#
-# sys.stderr = DevNull()  # Suppressing the error messages
-
-
-class SatelliteTrack(QWidget):
+class SatelliteTrackWidget(QWidget):
     def __init__(self, orb):
         super().__init__()
         self.orb = orb

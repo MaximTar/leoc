@@ -14,11 +14,13 @@ class AntennaTimeWidget(QGroupBox):
         NO_CONNECTION = 1
         SERVERS_UNAVAILABLE = 2
 
-    def __init__(self):
+    def __init__(self, parent=None):
         super().__init__()
         self.setTitle("UTC Time:")
 
         self.dt = None
+        self.delta_ok = False
+        self.parent = parent
 
         main_layout = QGridLayout()
 
@@ -53,6 +55,8 @@ class AntennaTimeWidget(QGroupBox):
         t = ntplib_ntp_time(self.ntp_servers_cbx.currentText())
         if t is not None:
             self.ntp_time_lbl.setText(t.strftime("%H:%M:%S"))
+            if not self.delta_ok:
+                self.get_time_delta()
         else:
             self.ntp_time_lbl.setText("Server is not available")
 
@@ -61,6 +65,7 @@ class AntennaTimeWidget(QGroupBox):
             t = ntplib_ntp_time(self.ntp_servers_cbx.currentText())
             if t is not None:
                 self.dt = ntplib_ntp_time(self.ntp_servers_cbx.currentText()) - datetime.utcnow()
+                self.delta_ok = True
                 return self.TimeResult.OK
             else:
                 return self.TimeResult.SERVERS_UNAVAILABLE

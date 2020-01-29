@@ -1,9 +1,13 @@
 import sys
 
-from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QTimer, QSize
+from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import *
 
 from parameters import *
+
+from utils.lines import *
+from utils.settings_window import SettingsWindow
 
 from utils.widgets.antenna_control_widget import AntennaControlWidget
 from utils.widgets.antenna_graph_widget import AntennaGraphWidget
@@ -15,13 +19,31 @@ from utils.widgets.map_widget import MapWidget
 from utils.widgets.tle_list_widget import *
 
 
+# import sys  # Suppressing the error messages
+#
+#
+# class DevNull:
+#     def write(self, msg):
+#         pass
+#
+#
+# sys.stderr = DevNull()  # Suppressing the error messages
+
+
 # noinspection PyUnresolvedReferences,PyCallByClass,PyArgumentList
 class MainWindow(QMainWindow):
+    class Status(Enum):
+        OK = 0
+        NOT_OK = 1
 
     def __init__(self):
         super().__init__()
+        self.setWindowTitle("LEOC")
 
         main_hbox = QHBoxLayout()
+        main_hbox.setContentsMargins(10, 10, 10, 0)
+
+        self.create_status_bar()
 
         self.map_widget = MapWidget()
         self.tle_list_widget = TleListWidget(self.update_map_widget)
@@ -30,17 +52,23 @@ class MainWindow(QMainWindow):
         self.antenna_control_widget = AntennaControlWidget()
         self.antenna_time_widget = AntennaTimeWidget()
         self.antenna_video_widget = AntennaVideoWidget(antenna_video_widget_address)
+        self.settings_window = SettingsWindow()
 
-        self.map_widget.set_uncheck_list_and_slot(self.tle_list_widget.checked_indices_list, self.tle_list_widget.uncheck_item)
+        self.map_widget.set_uncheck_list_and_slot(self.tle_list_widget.checked_indices_list,
+                                                  self.tle_list_widget.uncheck_item)
 
-        self.dt = None
-        dt_result = self.antenna_time_widget.get_time_delta()
-        if dt_result == AntennaTimeWidget.TimeResult.OK:
-            self.dt = self.antenna_time_widget.dt
-        elif dt_result == AntennaTimeWidget.TimeResult.SERVERS_UNAVAILABLE:
-            QMessageBox.warning(self, "No time received", "NTP servers are unavailable", QMessageBox.Ok)
-        elif dt_result == AntennaTimeWidget.TimeResult.NO_CONNECTION:
-            QMessageBox.warning(self, "No time received", "Check your internet connection", QMessageBox.Ok)
+        # TODO check on combobox changed
+        # self.dt = None
+        # dt_result = self.antenna_time_widget.get_time_delta()
+        # if dt_result == AntennaTimeWidget.TimeResult.OK:
+        #     self.dt = self.antenna_time_widget.dt
+        #     self.status = self.Status.OK
+        # elif dt_result == AntennaTimeWidget.TimeResult.SERVERS_UNAVAILABLE:
+        #     QMessageBox.warning(self, "No time received", "NTP servers are unavailable", QMessageBox.Ok)
+        #     self.status = self.Status.NOT_OK
+        # elif dt_result == AntennaTimeWidget.TimeResult.NO_CONNECTION:
+        #     QMessageBox.warning(self, "No time received", "Check your internet connection", QMessageBox.Ok)
+        #     self.status = self.Status.NOT_OK
 
         splitter = QSplitter(Qt.Horizontal)
         splitter.setStretchFactor(1, 1)
@@ -109,6 +137,7 @@ class MainWindow(QMainWindow):
     def construct_right_widget(self):
         right_widget = QWidget()
         right_vbox = QVBoxLayout()
+        right_vbox.setContentsMargins(5, 10, 10, 0)
         btn_widget = QWidget()
         btn_box = QHBoxLayout()
 
@@ -194,6 +223,33 @@ class MainWindow(QMainWindow):
                     QMessageBox.information(self, "Something is wrong", str(ret) + "is not satellite ID",
                                             QMessageBox.Ok)
 
+    def create_status_bar(self):
+        # self.statusBar().showMessage("")
+        status_lbl = QLabel("Status: ")
+
+        settings_btn = QPushButton("", self)
+        settings_btn.setIcon(QIcon("resources/icons/settings.png"))
+        settings_btn.setIconSize(QSize(20, 20))
+        settings_btn.clicked.connect(self.show_settings_window)
+
+        status_btn = QPushButton("", self)
+        status_btn.setIcon(QIcon("resources/icons/status_ok.png"))
+        status_btn.setIconSize(QSize(20, 20))
+
+        self.statusBar().setStyleSheet("QStatusBar {border: 0; background-color: #FFF8DC;}")
+
+        self.statusBar().addWidget(settings_btn)
+        self.statusBar().addPermanentWidget(VLine())
+        self.statusBar().addPermanentWidget(status_lbl)
+        self.statusBar().addPermanentWidget(status_btn)
+        self.statusBar().addPermanentWidget(VLine())
+
+    # noinspection PyMethodMayBeStatic
+    def show_settings_window(self):
+        # noinspection PyUnusedLocal
+        # settings_window = SettingsWindow()
+        self.settings_window.show()
+
     def send_btn_clicked(self):
         # TODO INTERACTION
         pass
@@ -211,6 +267,6 @@ if __name__ == "__main__":
     if check_parameters():
         main.show()
     else:
-        # noinspection PyArgumentList
+        # noinspection PyArgumentList,PyTypeChecker
         QMessageBox.critical(None, "Error", "Check parameters!", QMessageBox.Ok)
     sys.exit(app.exec_())
