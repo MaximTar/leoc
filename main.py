@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import *
 from utils.lines import *
 from utils.settings_window import SettingsWindow
 
+from utils.widgets.antenna_adjustment_widget import AntennaAdjustmentWidget
 from utils.widgets.antenna_control_widget import AntennaControlWidget
 from utils.widgets.antenna_graph_widget import AntennaGraphWidget
 from utils.widgets.antenna_pose_vel_widget import AntennaPosVelWidget
@@ -50,6 +51,7 @@ class MainWindow(QMainWindow):
         self.tle_list_widget = TleListWidget(self.update_map_widget)
         self.antenna_graph_widget = AntennaGraphWidget()
         self.antenna_pose_vel_widget = AntennaPosVelWidget()
+        self.antenna_adjustment_widget = AntennaAdjustmentWidget(self.settings)
         self.antenna_control_widget = AntennaControlWidget(self.settings)
         self.antenna_time_widget = AntennaTimeWidget()
         self.antenna_video_widget = AntennaVideoWidget(self.settings)
@@ -129,6 +131,7 @@ class MainWindow(QMainWindow):
         splitter.setStretchFactor(1, 1)
         splitter.addWidget(self.antenna_graph_widget)
         splitter.addWidget(self.antenna_pose_vel_widget)
+        splitter.addWidget(self.antenna_adjustment_widget)
         splitter.addWidget(self.antenna_control_widget)
         splitter.addWidget(self.antenna_time_widget)
         splitter.addWidget(self.antenna_video_widget)
@@ -249,6 +252,10 @@ class MainWindow(QMainWindow):
 
     def send_btn_clicked(self):
         # TODO INTERACTION
+        pass
+
+    def update_settings(self):
+        # TODO
         pass
 
 

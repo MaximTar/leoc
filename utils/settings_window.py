@@ -210,7 +210,3 @@ class SettingsWindow(QMainWindow):
 
         # TODO refresh classes, that use these parameters
         self.settings.sync()
-
-    def check_file(self):
-        # TODO? AFTER
-        pass
