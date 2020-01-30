@@ -4,8 +4,6 @@ from PyQt5.QtCore import QThread, pyqtSignal, pyqtSlot, Qt
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import QHBoxLayout, QLabel, QWidget
 
-from parameters import *
-
 
 # TODO AFTER full screen mode
 class AntennaVideoWidget(QWidget):
@@ -38,9 +36,11 @@ class AntennaVideoWidget(QWidget):
                 except Exception:
                     return False
 
-        def __init__(self, rtsp_uri, parent=None, parent_slot=None):
+        def __init__(self, settings, parent=None, parent_slot=None):
             super().__init__(parent=parent)
-            self.handler = self.RtspHandler(rtsp_uri)
+
+            self.settings = settings
+            self.handler = self.RtspHandler(self.settings.value("antenna_video/address", "rtsp://10.55.64.20"))
             self.parent_slot = parent_slot
 
         def run(self):
@@ -55,16 +55,19 @@ class AntennaVideoWidget(QWidget):
                     h, w, ch = rgb_image.shape
                     bytes_per_line = ch * w
                     convert_to_qt_format = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888)
-                    p = convert_to_qt_format.scaled(antenna_video_widget_min_width, antenna_video_widget_min_height,
+                    p = convert_to_qt_format.scaled(int(self.settings.value("antenna_video/min_width", 320)),
+                                                    int(self.settings.value("antenna_video/min_height", 240)),
                                                     Qt.KeepAspectRatio)
                     self.change_pixmap.emit(p)
 
-    def __init__(self, rtsp_uri):
+    def __init__(self, settings):
         super().__init__()
 
         self.label = QLabel(self)
         self.label.setScaledContents(True)
-        th = self.RtspThread(rtsp_uri, parent=self, parent_slot=self.if_handler_closed)
+        th = self.RtspThread(settings,
+                             parent=self,
+                             parent_slot=self.if_handler_closed)
         th.change_pixmap.connect(self.set_image)
         th.start()
 

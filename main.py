@@ -4,8 +4,6 @@ from PyQt5.QtCore import QTimer, QSize
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import *
 
-from parameters import *
-
 from utils.lines import *
 from utils.settings_window import SettingsWindow
 
@@ -45,14 +43,16 @@ class MainWindow(QMainWindow):
 
         self.create_status_bar()
 
+        self.settings_window = SettingsWindow()
+        self.settings = self.settings_window.settings
+
         self.map_widget = MapWidget()
         self.tle_list_widget = TleListWidget(self.update_map_widget)
         self.antenna_graph_widget = AntennaGraphWidget()
         self.antenna_pose_vel_widget = AntennaPosVelWidget()
-        self.antenna_control_widget = AntennaControlWidget()
+        self.antenna_control_widget = AntennaControlWidget(self.settings)
         self.antenna_time_widget = AntennaTimeWidget()
-        self.antenna_video_widget = AntennaVideoWidget(antenna_video_widget_address)
-        self.settings_window = SettingsWindow()
+        self.antenna_video_widget = AntennaVideoWidget(self.settings)
 
         self.map_widget.set_uncheck_list_and_slot(self.tle_list_widget.checked_indices_list,
                                                   self.tle_list_widget.uncheck_item)
@@ -86,7 +86,7 @@ class MainWindow(QMainWindow):
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_map_widget)
-        self.timer.start(update_map_period)
+        self.timer.start(int(self.settings.value("general_settings/map_update_period", 1000)))
 
     def update_map_widget(self):
         tle_list = get_tle_list_by_indices(self.tle_list_widget.checked_indices_list)
@@ -244,10 +244,7 @@ class MainWindow(QMainWindow):
         self.statusBar().addPermanentWidget(status_btn)
         self.statusBar().addPermanentWidget(VLine())
 
-    # noinspection PyMethodMayBeStatic
     def show_settings_window(self):
-        # noinspection PyUnusedLocal
-        # settings_window = SettingsWindow()
         self.settings_window.show()
 
     def send_btn_clicked(self):
@@ -255,18 +252,9 @@ class MainWindow(QMainWindow):
         pass
 
 
-def check_parameters():
-    return azimuth_spinbox_range_min < azimuth_spinbox_range_max \
-           and elevation_spinbox_range_min < elevation_spinbox_range_max
-
-
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     main = MainWindow()
-    if check_parameters():
-        main.show()
-    else:
-        # noinspection PyArgumentList,PyTypeChecker
-        QMessageBox.critical(None, "Error", "Check parameters!", QMessageBox.Ok)
+    main.show()
     sys.exit(app.exec_())

@@ -1,10 +1,8 @@
 from PyQt5.QtWidgets import QGridLayout, QGroupBox, QLabel, QDoubleSpinBox, QPushButton
 
-from parameters import *
-
 
 class AntennaControlWidget(QGroupBox):
-    def __init__(self):
+    def __init__(self, settings):
         super().__init__()
         # self.setTitle("Change antenna's azimuth and/or elevation offset")
 
@@ -15,12 +13,14 @@ class AntennaControlWidget(QGroupBox):
         main_layout.addWidget(QLabel("Elevation", self), 1, 0)
 
         azimuth_spinbox = QDoubleSpinBox(self)
-        azimuth_spinbox.setRange(azimuth_spinbox_range_min, azimuth_spinbox_range_max)
-        azimuth_spinbox.setSingleStep(azimuth_spinbox_step)
+        azimuth_spinbox.setRange(float(settings.value("antenna_control/azimuth_spinbox_range_min", -5)),
+                                 float(settings.value("antenna_control/azimuth_spinbox_range_max", 5)))
+        azimuth_spinbox.setSingleStep(float(settings.value("antenna_control/azimuth_spinbox_step", 0.1)))
 
         elevation_spinbox = QDoubleSpinBox(self)
-        elevation_spinbox.setRange(elevation_spinbox_range_min, elevation_spinbox_range_max)
-        elevation_spinbox.setSingleStep(elevation_spinbox_step)
+        elevation_spinbox.setRange(float(settings.value("antenna_control/elevation_spinbox_range_min", -5)),
+                                   float(settings.value("antenna_control/elevation_spinbox_range_max", 5)))
+        elevation_spinbox.setSingleStep(float(settings.value("antenna_control/elevation_spinbox_step", 0.1)))
 
         # central column
         main_layout.addWidget(azimuth_spinbox, 0, 2)

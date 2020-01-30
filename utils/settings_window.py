@@ -3,16 +3,23 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QTabWidget, QGridLayout, QLabe
     QVBoxLayout, QLineEdit, QPushButton, QHBoxLayout
 
 from utils.lines import *
+import os
 
-# TODO get path
-SETTINGS_PATH = "/home/maxtar/satellite/AnRot/resources/settings.ini"
+# TODO rewrite other paths
+SETTINGS_PATH = os.path.dirname(os.path.abspath(__file__)) + "/../resources/settings.ini"
+
+AZIMUTH_SPINBOX_RANGE_MIN = -6
+AZIMUTH_SPINBOX_RANGE_MAX = 6
+AZIMUTH_STEP_SPINBOX_RANGE_MAX = 1
+ELEVATION_SPINBOX_RANGE_MIN = -6
+ELEVATION_SPINBOX_RANGE_MAX = 6
+ELEVATION_STEP_SPINBOX_RANGE_MAX = 1
 
 
 class SettingsWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Settings")
-        # self.setFocusPolicy(Qt.StrongFocus)
         self.setWindowModality(Qt.ApplicationModal)
 
         self.settings = QSettings(SETTINGS_PATH, QSettings.IniFormat)
@@ -25,7 +32,7 @@ class SettingsWindow(QMainWindow):
         general_layout = QGridLayout()
 
         tabs.addTab(general_tab, "General")
-        self.settings.beginGroup("general")
+        self.settings.beginGroup("general_settings")
 
         # left column
         general_layout.addWidget(QLabel("Observer position:", self), 0, 0, 1, -1)
@@ -33,32 +40,36 @@ class SettingsWindow(QMainWindow):
         general_layout.addWidget(QLabel("Longitude", self), 2, 0)
         general_layout.addWidget(QLabel("Altitude", self), 3, 0)
         general_layout.addWidget(HLine(), 4, 0, 1, -1)
-        general_layout.addWidget(QLabel("Update rate", self), 5, 0)
+        upd_lbl = QLabel("Update rate [ms]", self)
+        upd_lbl.setToolTip("Map widget update rate in milliseconds")
+        general_layout.addWidget(upd_lbl, 5, 0)
 
         # fillers
         general_layout.addWidget(QLabel("", self), 6, 0)
         general_layout.addWidget(QLabel("", self), 7, 0)
         general_layout.addWidget(QLabel("", self), 8, 0)
 
-        # TODO ranges
-        latitude_spinbox = QDoubleSpinBox(self)
-        # azimuth_spinbox.setRange(azimuth_spinbox_range_min, azimuth_spinbox_range_max)
-        latitude_spinbox.setValue(self.settings.value("observer_latitude", type=float))
-
-        longitude_spinbox = QDoubleSpinBox(self)
-        longitude_spinbox.setValue(self.settings.value("observer_longitude", type=float))
-
-        altitude_spinbox = QDoubleSpinBox(self)
-        altitude_spinbox.setValue(self.settings.value("observer_altitude", type=float))
-
-        upd_rate_spinbox = QSpinBox(self)
-        upd_rate_spinbox.setValue(self.settings.value("map_update_period", type=int))
-
         # right column
-        general_layout.addWidget(latitude_spinbox, 1, 2)
-        general_layout.addWidget(longitude_spinbox, 2, 2)
-        general_layout.addWidget(altitude_spinbox, 3, 2)
-        general_layout.addWidget(upd_rate_spinbox, 5, 2)
+        self.latitude_spinbox = QDoubleSpinBox(self)
+        self.latitude_spinbox.setRange(-90, 90)
+        self.latitude_spinbox.setValue(self.settings.value("observer_latitude", type=float))
+
+        self.longitude_spinbox = QDoubleSpinBox(self)
+        self.longitude_spinbox.setRange(-180, 180)
+        self.longitude_spinbox.setValue(self.settings.value("observer_longitude", type=float))
+
+        self.altitude_spinbox = QDoubleSpinBox(self)
+        self.altitude_spinbox.setRange(-10925, 6265)
+        self.altitude_spinbox.setValue(self.settings.value("observer_altitude", type=float))
+
+        self.upd_rate_spinbox = QSpinBox(self)
+        self.upd_rate_spinbox.setRange(1, 2147483644)
+        self.upd_rate_spinbox.setValue(self.settings.value("map_update_period", type=int))
+
+        general_layout.addWidget(self.latitude_spinbox, 1, 2)
+        general_layout.addWidget(self.longitude_spinbox, 2, 2)
+        general_layout.addWidget(self.altitude_spinbox, 3, 2)
+        general_layout.addWidget(self.upd_rate_spinbox, 5, 2)
 
         self.settings.endGroup()
         general_tab.setLayout(general_layout)
@@ -83,20 +94,21 @@ class SettingsWindow(QMainWindow):
         antenna_video_layout.addWidget(QLabel("", self), 7, 0)
         antenna_video_layout.addWidget(QLabel("", self), 8, 0)
 
-        # TODO ranges
-        camera_address_line_edit = QLineEdit(self)
-        camera_address_line_edit.setText(self.settings.value("address", type=str))
-
-        min_width_spinbox = QSpinBox(self)
-        min_width_spinbox.setValue(self.settings.value("min_width", type=int))
-
-        min_height_spinbox = QSpinBox(self)
-        min_height_spinbox.setValue(self.settings.value("min_height", type=int))
-
         # right column
-        antenna_video_layout.addWidget(camera_address_line_edit, 0, 2)
-        antenna_video_layout.addWidget(min_width_spinbox, 3, 2)
-        antenna_video_layout.addWidget(min_height_spinbox, 4, 2)
+        self.camera_address_line_edit = QLineEdit(self)
+        self.camera_address_line_edit.setText(self.settings.value("address", type=str))
+
+        self.min_width_spinbox = QSpinBox(self)
+        self.min_width_spinbox.setRange(0, 1920)
+        self.min_width_spinbox.setValue(self.settings.value("min_width", type=int))
+
+        self.min_height_spinbox = QSpinBox(self)
+        self.min_height_spinbox.setRange(0, 1080)
+        self.min_height_spinbox.setValue(self.settings.value("min_height", type=int))
+
+        antenna_video_layout.addWidget(self.camera_address_line_edit, 0, 2)
+        antenna_video_layout.addWidget(self.min_width_spinbox, 3, 2)
+        antenna_video_layout.addWidget(self.min_height_spinbox, 4, 2)
 
         self.settings.endGroup()
         antenna_video_tab.setLayout(antenna_video_layout)
@@ -119,39 +131,42 @@ class SettingsWindow(QMainWindow):
         antenna_control_layout.addWidget(QLabel("Range max", self), 7, 0)
         antenna_control_layout.addWidget(QLabel("Step", self), 8, 0)
 
-        # TODO ranges
-        azimuth_range_min_spinbox = QDoubleSpinBox(self)
-        # azimuth_spinbox.setRange(azimuth_spinbox_range_min, azimuth_spinbox_range_max)
-        azimuth_range_min_spinbox.setValue(self.settings.value("azimuth_spinbox_range_min", type=float))
-
-        azimuth_range_max_spinbox = QDoubleSpinBox(self)
-        azimuth_range_max_spinbox.setValue(self.settings.value("azimuth_spinbox_range_max", type=float))
-
-        azimuth_step_spinbox = QDoubleSpinBox(self)
-        azimuth_step_spinbox.setValue(self.settings.value("azimuth_spinbox_step", type=float))
-
-        elevation_range_min_spinbox = QDoubleSpinBox(self)
-        # elevation_spinbox.setRange(elevation_spinbox_range_min, elevation_spinbox_range_max)
-        elevation_range_min_spinbox.setValue(self.settings.value("elevation_spinbox_range_min", type=float))
-
-        elevation_range_max_spinbox = QDoubleSpinBox(self)
-        elevation_range_max_spinbox.setValue(self.settings.value("elevation_spinbox_range_max", type=float))
-
-        elevation_step_spinbox = QDoubleSpinBox(self)
-        elevation_step_spinbox.setValue(self.settings.value("elevation_spinbox_step", type=float))
-
         # right column
-        antenna_control_layout.addWidget(azimuth_range_min_spinbox, 1, 2)
-        antenna_control_layout.addWidget(azimuth_range_max_spinbox, 2, 2)
-        antenna_control_layout.addWidget(azimuth_step_spinbox, 3, 2)
-        antenna_control_layout.addWidget(elevation_range_min_spinbox, 6, 2)
-        antenna_control_layout.addWidget(elevation_range_max_spinbox, 7, 2)
-        antenna_control_layout.addWidget(elevation_step_spinbox, 8, 2)
+        self.azimuth_range_min_spinbox = QDoubleSpinBox(self)
+        self.azimuth_range_min_spinbox.setRange(AZIMUTH_SPINBOX_RANGE_MIN, 0)
+        self.azimuth_range_min_spinbox.setValue(self.settings.value("azimuth_spinbox_range_min", type=float))
+
+        self.azimuth_range_max_spinbox = QDoubleSpinBox(self)
+        self.azimuth_range_max_spinbox.setRange(0, AZIMUTH_SPINBOX_RANGE_MAX)
+        self.azimuth_range_max_spinbox.setValue(self.settings.value("azimuth_spinbox_range_max", type=float))
+
+        self.azimuth_step_spinbox = QDoubleSpinBox(self)
+        self.azimuth_step_spinbox.setRange(0, AZIMUTH_STEP_SPINBOX_RANGE_MAX)
+        self.azimuth_step_spinbox.setValue(self.settings.value("azimuth_spinbox_step", type=float))
+
+        self.elevation_range_min_spinbox = QDoubleSpinBox(self)
+        self.elevation_range_min_spinbox.setRange(ELEVATION_SPINBOX_RANGE_MIN, 0)
+        self.elevation_range_min_spinbox.setValue(self.settings.value("elevation_spinbox_range_min", type=float))
+
+        self.elevation_range_max_spinbox = QDoubleSpinBox(self)
+        self.elevation_range_max_spinbox.setRange(0, ELEVATION_SPINBOX_RANGE_MAX)
+        self.elevation_range_max_spinbox.setValue(self.settings.value("elevation_spinbox_range_max", type=float))
+
+        self.elevation_step_spinbox = QDoubleSpinBox(self)
+        self.elevation_step_spinbox.setRange(0, ELEVATION_STEP_SPINBOX_RANGE_MAX)
+        self.elevation_step_spinbox.setValue(self.settings.value("elevation_spinbox_step", type=float))
+
+        antenna_control_layout.addWidget(self.azimuth_range_min_spinbox, 1, 2)
+        antenna_control_layout.addWidget(self.azimuth_range_max_spinbox, 2, 2)
+        antenna_control_layout.addWidget(self.azimuth_step_spinbox, 3, 2)
+        antenna_control_layout.addWidget(self.elevation_range_min_spinbox, 6, 2)
+        antenna_control_layout.addWidget(self.elevation_range_max_spinbox, 7, 2)
+        antenna_control_layout.addWidget(self.elevation_step_spinbox, 8, 2)
 
         self.settings.endGroup()
         antenna_control_tab.setLayout(antenna_control_layout)
 
-        # TODO connect actions
+        # buttons
         cancel_btn = QPushButton("Cancel", self)
         cancel_btn.clicked.connect(self.cancel_btn_clicked)
         apply_btn = QPushButton("Apply", self)
@@ -177,9 +192,24 @@ class SettingsWindow(QMainWindow):
         self.close()
 
     def apply_btn_clicked(self):
-        # TODO
+        self.settings.setValue("general_settings/observer_latitude", self.latitude_spinbox.value())
+        self.settings.setValue("general_settings/observer_longitude", self.longitude_spinbox.value())
+        self.settings.setValue("general_settings/observer_altitude", self.altitude_spinbox.value())
+        self.settings.setValue("general_settings/map_update_period", self.upd_rate_spinbox.value())
+
+        self.settings.setValue("antenna_video/address", self.camera_address_line_edit.text())
+        self.settings.setValue("antenna_video/min_width", self.min_width_spinbox.value())
+        self.settings.setValue("antenna_video/min_height", self.min_height_spinbox.value())
+
+        self.settings.setValue("antenna_control/azimuth_spinbox_range_min", self.azimuth_range_min_spinbox.value())
+        self.settings.setValue("antenna_control/azimuth_spinbox_range_max", self.azimuth_range_max_spinbox.value())
+        self.settings.setValue("antenna_control/azimuth_spinbox_step", self.azimuth_step_spinbox.value())
+        self.settings.setValue("antenna_control/elevation_spinbox_range_min", self.elevation_range_min_spinbox.value())
+        self.settings.setValue("antenna_control/elevation_spinbox_range_max", self.elevation_range_max_spinbox.value())
+        self.settings.setValue("antenna_control/elevation_spinbox_step", self.elevation_step_spinbox.value())
+
+        # TODO refresh classes, that use these parameters
         self.settings.sync()
-        pass
 
     def check_file(self):
         # TODO? AFTER
