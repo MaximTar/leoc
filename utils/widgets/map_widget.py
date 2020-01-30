@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import QWidget, QStackedLayout, QMessageBox, QAction, QMenu
 
 from utils.widgets.satellite_footprint_widget import SatelliteFootprintWidget
 from utils.widgets.satellite_track_widget import SatelliteTrackWidget
+from utils.widgets.terminator_widget import TerminatorWidget
 
 
 class MapWidget(QWidget):
@@ -40,6 +41,9 @@ class MapWidget(QWidget):
                     self.stacked_layout.addWidget(track)
                     self.stacked_layout.addWidget(footprint)
 
+        terminator = TerminatorWidget()
+        self.stacked_layout.addWidget(terminator)
+
         self.setLayout(self.stacked_layout)
 
         # context menu
@@ -69,6 +73,10 @@ class MapWidget(QWidget):
             else:
                 self.stacked_layout.addWidget(track)
                 self.stacked_layout.addWidget(footprint)
+
+        terminator = TerminatorWidget()
+        self.stacked_layout.addWidget(terminator)
+
         # activate widgets
         # for i in reversed(range(self.stacked_layout.count())):
         for i in (range(self.stacked_layout.count())):
