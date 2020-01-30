@@ -47,7 +47,7 @@ class MainWindow(QMainWindow):
         self.settings_window = SettingsWindow()
         self.settings = self.settings_window.settings
 
-        self.map_widget = MapWidget()
+        self.map_widget = MapWidget(settings_window=self.settings_window)
         self.tle_list_widget = TleListWidget(self.update_map_widget)
         self.antenna_graph_widget = AntennaGraphWidget()
         self.antenna_pose_vel_widget = AntennaPosVelWidget()

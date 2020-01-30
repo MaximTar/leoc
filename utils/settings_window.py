@@ -25,13 +25,13 @@ class SettingsWindow(QMainWindow):
         self.settings = QSettings(SETTINGS_PATH, QSettings.IniFormat)
 
         main_vbox_layout = QVBoxLayout()
-        tabs = QTabWidget()
+        self.tabs = QTabWidget()
 
         # first tab (general)
         general_tab = QWidget()
         general_layout = QGridLayout()
 
-        tabs.addTab(general_tab, "General")
+        self.tabs.addTab(general_tab, "General")
         self.settings.beginGroup("general_settings")
 
         # left column
@@ -78,7 +78,7 @@ class SettingsWindow(QMainWindow):
         antenna_video_tab = QWidget()
         antenna_video_layout = QGridLayout()
 
-        tabs.addTab(antenna_video_tab, "Antenna Video")
+        self.tabs.addTab(antenna_video_tab, "Antenna Video")
         self.settings.beginGroup("antenna_video")
 
         # left column
@@ -117,7 +117,7 @@ class SettingsWindow(QMainWindow):
         antenna_control_tab = QWidget()
         antenna_control_layout = QGridLayout()
 
-        tabs.addTab(antenna_control_tab, "Antenna Control")
+        self.tabs.addTab(antenna_control_tab, "Antenna Control")
         self.settings.beginGroup("antenna_control")
 
         # left column
@@ -178,7 +178,7 @@ class SettingsWindow(QMainWindow):
         buttons_widget = QWidget()
         buttons_widget.setLayout(buttons_hbox_layout)
 
-        main_vbox_layout.addWidget(tabs)
+        main_vbox_layout.addWidget(self.tabs)
         main_vbox_layout.addWidget(buttons_widget)
 
         central_widget = QWidget()

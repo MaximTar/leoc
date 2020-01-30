@@ -1,14 +1,17 @@
-from PyQt5.QtWidgets import QWidget, QStackedLayout, QMessageBox
+from PyQt5.QtCore import QEvent
+from PyQt5.QtWidgets import QWidget, QStackedLayout, QMessageBox, QAction, QMenu
 
 from utils.widgets.satellite_footprint_widget import SatelliteFootprintWidget
 from utils.widgets.satellite_track_widget import SatelliteTrackWidget
 
 
 class MapWidget(QWidget):
-    def __init__(self, orb_list=None, slot=None, idx_list=None):
+    # not sure, that this is a good solution (to pass slot, list and window to the constructor)
+    def __init__(self, orb_list=None, uncheck_slot=None, idx_list=None, settings_window=None):
         super().__init__()
-        self.uncheck_slot = slot
+        self.uncheck_slot = uncheck_slot
         self.idx_list = idx_list
+        self.settings_window = settings_window
 
         self.orb_list = orb_list
 
@@ -38,6 +41,9 @@ class MapWidget(QWidget):
                     self.stacked_layout.addWidget(footprint)
 
         self.setLayout(self.stacked_layout)
+
+        # context menu
+        self.installEventFilter(self)
 
     def update_map(self, orb_list):
         self.orb_list = orb_list
@@ -72,3 +78,19 @@ class MapWidget(QWidget):
         if slot is not None and idx_list is not None:
             self.idx_list = idx_list
             self.uncheck_slot = slot
+
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.ContextMenu:
+            set_observer_position_action = QAction(self.tr("Set observer position"), self)
+            set_observer_position_action.triggered.connect(self.set_observer_position_slot)
+
+            menu = QMenu(self)
+            menu.addAction(set_observer_position_action)
+            menu.exec_(event.globalPos())
+            return True
+        return False
+
+    def set_observer_position_slot(self):
+        if self.settings_window is not None:
+            self.settings_window.tabs.setCurrentIndex(0)
+            self.settings_window.show()
