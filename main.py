@@ -1,11 +1,12 @@
 import sys
 
-from PyQt5.QtCore import QTimer, QSize
+from PyQt5.QtCore import QTimer, QSize, Qt
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import *
 
 from utils.lines import *
 from utils.settings_window import SettingsWindow
+from utils.tle_handler import *
 
 from utils.widgets.antenna_adjustment_widget import AntennaAdjustmentWidget
 from utils.widgets.antenna_control_widget import AntennaControlWidget
@@ -15,7 +16,8 @@ from utils.widgets.antenna_time_widget import AntennaTimeWidget
 from utils.widgets.antenna_video_widget import AntennaVideoWidget
 from utils.widgets.manual_tle_input_widget import ManualTleInputWidget
 from utils.widgets.map_widget import MapWidget
-from utils.widgets.tle_list_widget import *
+from utils.widgets.satellite_data_widget import SatelliteDataWidget
+from utils.widgets.tle_list_widget import TleListWidget
 
 
 # import sys  # Suppressing the error messages
@@ -48,7 +50,8 @@ class MainWindow(QMainWindow):
         self.settings = self.settings_window.settings
 
         self.map_widget = MapWidget(settings_window=self.settings_window)
-        self.tle_list_widget = TleListWidget(self.update_map_widget)
+        self.tle_list_widget = TleListWidget(self.update_map_widget, data_slot=self.update_sat_data)
+        self.satellite_data_widget = SatelliteDataWidget()
         self.antenna_graph_widget = AntennaGraphWidget()
         self.antenna_pose_vel_widget = AntennaPosVelWidget()
         self.antenna_adjustment_widget = AntennaAdjustmentWidget(self.settings)
@@ -94,6 +97,11 @@ class MainWindow(QMainWindow):
         tle_list = get_tle_list_by_indices(self.tle_list_widget.checked_indices_list)
         orb_list = get_orb_list_by_tle_list(tle_list)
         self.map_widget.update_map(orb_list)
+
+    def update_sat_data(self):
+        tle = get_tle_by_index(self.tle_list_widget.selectedIndexes()[0].row())
+        orb = get_orb_by_tle(tle)
+        self.satellite_data_widget.update_data(orb)
 
     def add_to_tle_list_widget(self, sat_id=None, tle=None):
         th = TleHandler()

@@ -6,7 +6,7 @@ from pyorbital.orbital import Orbital
 from requests import get
 from spacetrack import SpaceTrackClient
 
-# Work with indexes and satellite identifiers is preferable, since names can be duplicated
+# Work with indices and satellite identifiers is preferable, since names can be duplicated
 import deprecation
 
 ST_USERNAME = "max_131092@mail.ru"
@@ -119,6 +119,15 @@ def get_tle_list_by_indices(indices):
     for idx in indices:
         tle_list.append(get_tle_by_index(idx))
     return tle_list
+
+
+def get_orb_by_tle(tle):
+    orb = None
+    if len(tle) == 2:
+        orb = Orbital(satellite="", line1=tle[0], line2=tle[1])
+    elif len(tle) == 3:
+        orb = Orbital(satellite=tle[0], line1=tle[1], line2=tle[2])
+    return orb
 
 
 def get_orb_list_by_tle_list(tle_list):
@@ -266,7 +275,7 @@ def is_tle(tle):
             and isinstance(float(second_line[34:42]), float) \
             and isinstance(float(second_line[43:51]), float) \
             and isinstance(float(second_line[52:63]), float) \
-            and isinstance(int(second_line[63:69]), int):
+                and isinstance(int(second_line[63:69]), int):
             return True
     except BaseException:
         return False

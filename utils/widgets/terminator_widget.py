@@ -2,7 +2,7 @@ from datetime import datetime
 
 import numpy as np
 from PyQt5.QtCore import Qt, QPointF
-from PyQt5.QtGui import QPainter, QPainterPath
+from PyQt5.QtGui import QPainter, QPainterPath, QPen, QBrush
 
 from PyQt5.QtWidgets import QWidget
 
@@ -133,7 +133,9 @@ class TerminatorWidget(QWidget):
 
     def paintEvent(self, event):
         painter = QPainter(self)
-        painter.setPen(Qt.darkBlue)
+        painter.setPen(Qt.white)
+
+        # painter.setBrush(QBrush(Qt.red, Qt.SolidPattern))
 
         if self.points is not None:
             scaled_points = qpoints_scaling(self.width(), self.height(), self.points)
@@ -145,5 +147,11 @@ class TerminatorWidget(QWidget):
                     path.moveTo(p)
                     first = False
                 path.lineTo(p)
+
+            painter.drawPath(path)
+
+            pen = QPen(Qt.red, 0, Qt.CustomDashLine)
+            pen.setDashPattern([15, 15])
+            painter.setPen(pen)
 
             painter.drawPath(path)

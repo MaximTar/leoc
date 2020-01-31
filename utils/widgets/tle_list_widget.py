@@ -5,7 +5,7 @@ from utils.tle_handler import *
 
 # noinspection PyUnresolvedReferences
 class TleListWidget(QListWidget):
-    def __init__(self, parent_slot=None):
+    def __init__(self, parent_slot=None, data_slot=None):
         super().__init__()
         self.checked_indices_list = []
 
@@ -14,6 +14,9 @@ class TleListWidget(QListWidget):
             item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
             item.setCheckState(Qt.Unchecked)
             self.addItem(item)
+
+        if data_slot:
+            self.itemSelectionChanged.connect(data_slot)
 
         self.itemChanged.connect(self.item_changed)
         if parent_slot and self.checked_indices_list:
@@ -27,7 +30,7 @@ class TleListWidget(QListWidget):
 
     def update_list(self):
         self.clear()
-        # TODO AFTER think about how to save checked items
+        # TODO AFTER think about how to save checked and selected items
         for name in get_all_names():
             item = QListWidgetItem(name)
             item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
