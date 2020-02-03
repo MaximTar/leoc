@@ -8,7 +8,7 @@ class SatelliteDataWidget(QWidget):
         super().__init__()
 
         # label names
-        # TODO Declination, Distance (Range), RRt, Velocity, Direction, Eclipse, VEL(OSV), Constellation
+        # TODO AFTER Declination, Distance (Range), RRt, Velocity, Direction, Eclipse, VEL(OSV), Constellation
         # self.right_ascension_lon_name_lbl = QLabel(self)
         # self.mean_motion_derivative_name_lbl = QLabel(self)
         # self.mean_motion_sec_derivative_name_lbl = QLabel(self)
@@ -106,7 +106,7 @@ class SatelliteDataWidget(QWidget):
         self.setLayout(grid_layout)
 
     def update_data(self, orb):
-        self.epoch_lbl.setText(str(str(orb.orbit_elements.epoch)))
+        self.epoch_lbl.setText(str(orb.orbit_elements.epoch))
         self.eccentricity_lbl.setText(str(orb.orbit_elements.excentricity))
         self.inclination_lbl.setText(str(orb.orbit_elements.inclination))
         self.arg_perigee_lbl.setText(str(orb.orbit_elements.arg_perigee))

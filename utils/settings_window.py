@@ -51,10 +51,12 @@ class SettingsWindow(QMainWindow):
 
         # right column
         self.latitude_spinbox = QDoubleSpinBox(self)
+        self.latitude_spinbox.setDecimals(6)
         self.latitude_spinbox.setRange(-90, 90)
         self.latitude_spinbox.setValue(self.settings.value("observer_latitude", type=float))
 
         self.longitude_spinbox = QDoubleSpinBox(self)
+        self.longitude_spinbox.setDecimals(6)
         self.longitude_spinbox.setRange(-180, 180)
         self.longitude_spinbox.setValue(self.settings.value("observer_longitude", type=float))
 

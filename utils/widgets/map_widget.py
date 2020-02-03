@@ -1,9 +1,16 @@
-from PyQt5.QtCore import QEvent
-from PyQt5.QtWidgets import QWidget, QStackedLayout, QMessageBox, QAction, QMenu
+import os
 
+from PyQt5.QtCore import QEvent, Qt, QPointF
+from PyQt5.QtGui import QPixmap
+from PyQt5.QtWidgets import QWidget, QStackedLayout, QMessageBox, QAction, QMenu, QLabel
+
+from utils.qpoints_utils import qpoints_scaling
 from utils.widgets.satellite_footprint_widget import SatelliteFootprintWidget
 from utils.widgets.satellite_track_widget import SatelliteTrackWidget
 from utils.widgets.terminator_widget import TerminatorWidget
+
+MCC_ICON_PATH = os.path.dirname(os.path.abspath(__file__)) + "/../../resources/icons/mcc.png"
+MCC_ICON_SIZE = 30
 
 
 class MapWidget(QWidget):
@@ -22,6 +29,25 @@ class MapWidget(QWidget):
         self.background = QWidget()
         self.background.setStyleSheet("border-image: url('resources/earth.jpg') 0 0 0 0 stretch stretch;")
         self.stacked_layout.addWidget(self.background)
+
+        self.mcc = QLabel("", self)
+        self.mcc.setPixmap(
+            QPixmap(MCC_ICON_PATH).scaled(MCC_ICON_SIZE, MCC_ICON_SIZE, Qt.KeepAspectRatio, Qt.FastTransformation))
+        # self.mcc.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+        # mcc_coordinates = [float(self.settings_window.settings.value("general_settings/observer_longitude", 0)),
+        #                    float(self.settings_window.settings.value("general_settings/observer_latitude", 0)),
+        #                    float(self.settings_window.settings.value("general_settings/observer_altitude", 0))]
+        self.mcc_qpoint = [
+            QPointF(float(self.settings_window.settings.value("general_settings/observer_longitude", 0)) + 180,
+                    -float(self.settings_window.settings.value("general_settings/observer_latitude", 0)) + 90)]
+        scaled_mcc_qpoint = qpoints_scaling(self.width(), self.height(), self.mcc_qpoint)[0]
+        print(self.mcc.geometry())
+        self.mcc.setGeometry(scaled_mcc_qpoint.x() - MCC_ICON_SIZE / 2, scaled_mcc_qpoint.y() - MCC_ICON_SIZE / 2,
+                             MCC_ICON_SIZE, MCC_ICON_SIZE)
+        print(self.mcc.geometry())
+        # self.mcc.setGeometry(0, 0, 0, 0)
+
+        self.stacked_layout.addWidget(self.mcc)
 
         if self.orb_list is not None:
             for orb in self.orb_list:
@@ -49,10 +75,16 @@ class MapWidget(QWidget):
         # context menu
         self.installEventFilter(self)
 
+    def paintEvent(self, event):
+        scaled_mcc_qpoint = qpoints_scaling(self.width(), self.height(), self.mcc_qpoint)[0]
+        self.mcc.setGeometry(scaled_mcc_qpoint.x() - MCC_ICON_SIZE / 2, scaled_mcc_qpoint.y() - MCC_ICON_SIZE / 2,
+                             MCC_ICON_SIZE, MCC_ICON_SIZE)
+
     def update_map(self, orb_list):
         self.orb_list = orb_list
         for i in reversed(range(self.stacked_layout.count())):
-            if self.stacked_layout.itemAt(i).widget() != self.background:
+            if self.stacked_layout.itemAt(i).widget() != self.background \
+                    and self.stacked_layout.itemAt(i).widget() != self.mcc:
                 # noinspection PyTypeChecker
                 self.stacked_layout.itemAt(i).widget().setParent(None)
         # not sure, that this is a good solution
