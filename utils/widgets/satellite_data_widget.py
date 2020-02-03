@@ -1,17 +1,19 @@
-from PyQt5.QtWidgets import QWidget, QLabel, QGridLayout, QScrollArea
+from datetime import datetime
+
+from PyQt5.QtWidgets import QWidget, QLabel, QGridLayout, QWidgetItem
 
 from utils.lines import *
 
 
 class SatelliteDataWidget(QWidget):
-    def __init__(self):
+    def __init__(self, settings=None):
         super().__init__()
 
-        # label names
+        self.settings = None
+        if settings:
+            self.settings = settings
+
         # TODO AFTER Declination, Distance (Range), RRt, Velocity, Direction, Eclipse, VEL(OSV), Constellation
-        # self.right_ascension_lon_name_lbl = QLabel(self)
-        # self.mean_motion_derivative_name_lbl = QLabel(self)
-        # self.mean_motion_sec_derivative_name_lbl = QLabel(self)
 
         # labels
         self.epoch_lbl = QLabel("", self)
@@ -44,68 +46,85 @@ class SatelliteDataWidget(QWidget):
         # self.mean_motion_derivative_lbl = QLabel("", self)
         # self.mean_motion_sec_derivative_lbl = QLabel("", self)
 
-        grid_layout = QGridLayout()
+        self.grid_layout = QGridLayout()
 
         # first column
-        grid_layout.addWidget(QLabel("Longitude", self), 0, 0)
-        grid_layout.addWidget(QLabel("Latitude", self), 1, 0)
-        grid_layout.addWidget(QLabel("Altitude", self), 2, 0)
-        grid_layout.addWidget(QLabel("Azimuth", self), 3, 0)
-        grid_layout.addWidget(QLabel("Elevation", self), 4, 0)
-        grid_layout.addWidget(HLine(), 5, 0, 1, -1)
-        grid_layout.addWidget(QLabel("Satellite number", self), 6, 0)
-        grid_layout.addWidget(QLabel("Epoch", self), 7, 0)
-        grid_layout.addWidget(QLabel("Revolution number", self), 8, 0)
-        grid_layout.addWidget(QLabel("Inclination", self), 9, 0)
-        grid_layout.addWidget(QLabel("Right ascension", self), 10, 0)
-        grid_layout.addWidget(QLabel("Eccentricity", self), 11, 0)
-        grid_layout.addWidget(QLabel("Argument of perigee", self), 12, 0)
-        grid_layout.addWidget(QLabel("Period", self), 13, 0)
-        grid_layout.addWidget(QLabel("Semi-major axis", self), 14, 0)
-        grid_layout.addWidget(QLabel("Perigee", self), 15, 0)
-        grid_layout.addWidget(QLabel("B*", self), 16, 0)
-        grid_layout.addWidget(QLabel("Mean anomaly", self), 17, 0)
-        grid_layout.addWidget(QLabel("Mean motion", self), 18, 0)
-        grid_layout.addWidget(QLabel("Epoch year", self), 19, 0)
-        grid_layout.addWidget(QLabel("Epoch day", self), 20, 0)
-        grid_layout.addWidget(QLabel("Launch year", self), 21, 0)
-        grid_layout.addWidget(QLabel("Launch number", self), 22, 0)
-        grid_layout.addWidget(QLabel("Launch piece", self), 23, 0)
-        grid_layout.addWidget(QLabel("Element number", self), 24, 0)
-        grid_layout.addWidget(QLabel("Ephemeris type", self), 25, 0)
-        grid_layout.addWidget(QLabel("Classification", self), 26, 0)
+        self.grid_layout.addWidget(QLabel("Longitude", self), 0, 0)
+        self.grid_layout.addWidget(QLabel("Latitude", self), 1, 0)
+        self.grid_layout.addWidget(QLabel("Altitude", self), 2, 0)
+        self.grid_layout.addWidget(QLabel("Azimuth", self), 3, 0)
+        self.grid_layout.addWidget(QLabel("Elevation", self), 4, 0)
+        self.grid_layout.addWidget(HLine(), 5, 0, 1, -1)
+        self.grid_layout.addWidget(QLabel("Satellite number", self), 6, 0)
+        self.grid_layout.addWidget(QLabel("Epoch", self), 7, 0)
+        self.grid_layout.addWidget(QLabel("Revolution number", self), 8, 0)
+        self.grid_layout.addWidget(QLabel("Inclination", self), 9, 0)
+        self.grid_layout.addWidget(QLabel("Right ascension", self), 10, 0)
+        self.grid_layout.addWidget(QLabel("Eccentricity", self), 11, 0)
+        self.grid_layout.addWidget(QLabel("Argument of perigee", self), 12, 0)
+        self.grid_layout.addWidget(QLabel("Period", self), 13, 0)
+        self.grid_layout.addWidget(QLabel("Semi-major axis", self), 14, 0)
+        self.grid_layout.addWidget(QLabel("Perigee", self), 15, 0)
+        self.grid_layout.addWidget(QLabel("B*", self), 16, 0)
+        self.grid_layout.addWidget(QLabel("Mean anomaly", self), 17, 0)
+        self.grid_layout.addWidget(QLabel("Mean motion", self), 18, 0)
+        self.grid_layout.addWidget(QLabel("Epoch year", self), 19, 0)
+        self.grid_layout.addWidget(QLabel("Epoch day", self), 20, 0)
+        self.grid_layout.addWidget(QLabel("Launch year", self), 21, 0)
+        self.grid_layout.addWidget(QLabel("Launch number", self), 22, 0)
+        self.grid_layout.addWidget(QLabel("Launch piece", self), 23, 0)
+        self.grid_layout.addWidget(QLabel("Element number", self), 24, 0)
+        self.grid_layout.addWidget(QLabel("Ephemeris type", self), 25, 0)
+        self.grid_layout.addWidget(QLabel("Classification", self), 26, 0)
 
         # second column
-        grid_layout.addWidget(self.longitude_lbl, 0, 2)
-        grid_layout.addWidget(self.latitude_lbl, 1, 2)
-        grid_layout.addWidget(self.altitude_lbl, 2, 2)
-        grid_layout.addWidget(self.azimuth_lbl, 3, 2)
-        grid_layout.addWidget(self.elevation_lbl, 4, 2)
-        grid_layout.addWidget(self.sat_number_lbl, 6, 2)
-        grid_layout.addWidget(self.epoch_lbl, 7, 2)
-        grid_layout.addWidget(self.orbit_lbl, 8, 2)
-        grid_layout.addWidget(self.inclination_lbl, 9, 2)
-        grid_layout.addWidget(self.right_ascension_lbl, 10, 2)
-        grid_layout.addWidget(self.eccentricity_lbl, 11, 2)
-        grid_layout.addWidget(self.arg_perigee_lbl, 12, 2)
-        grid_layout.addWidget(self.period_lbl, 13, 2)
-        grid_layout.addWidget(self.semi_major_axis_lbl, 14, 2)
-        grid_layout.addWidget(self.perigee_lbl, 15, 2)
-        grid_layout.addWidget(self.b_star_lbl, 16, 2)
-        grid_layout.addWidget(self.mean_anomaly_lbl, 17, 2)
-        grid_layout.addWidget(self.mean_motion_lbl, 18, 2)
-        grid_layout.addWidget(self.epoch_year_lbl, 19, 2)
-        grid_layout.addWidget(self.epoch_day_lbl, 20, 2)
-        grid_layout.addWidget(self.id_launch_year_lbl, 21, 2)
-        grid_layout.addWidget(self.id_launch_number_lbl, 22, 2)
-        grid_layout.addWidget(self.id_launch_piece_lbl, 23, 2)
-        grid_layout.addWidget(self.element_number_lbl, 24, 2)
-        grid_layout.addWidget(self.ephemeris_type_lbl, 25, 2)
-        grid_layout.addWidget(self.classification_lbl, 26, 2)
+        self.grid_layout.addWidget(self.longitude_lbl, 0, 2)
+        self.grid_layout.addWidget(self.latitude_lbl, 1, 2)
+        self.grid_layout.addWidget(self.altitude_lbl, 2, 2)
+        self.grid_layout.addWidget(self.azimuth_lbl, 3, 2)
+        self.grid_layout.addWidget(self.elevation_lbl, 4, 2)
+        self.grid_layout.addWidget(self.sat_number_lbl, 6, 2)
+        self.grid_layout.addWidget(self.epoch_lbl, 7, 2)
+        self.grid_layout.addWidget(self.orbit_lbl, 8, 2)
+        self.grid_layout.addWidget(self.inclination_lbl, 9, 2)
+        self.grid_layout.addWidget(self.right_ascension_lbl, 10, 2)
+        self.grid_layout.addWidget(self.eccentricity_lbl, 11, 2)
+        self.grid_layout.addWidget(self.arg_perigee_lbl, 12, 2)
+        self.grid_layout.addWidget(self.period_lbl, 13, 2)
+        self.grid_layout.addWidget(self.semi_major_axis_lbl, 14, 2)
+        self.grid_layout.addWidget(self.perigee_lbl, 15, 2)
+        self.grid_layout.addWidget(self.b_star_lbl, 16, 2)
+        self.grid_layout.addWidget(self.mean_anomaly_lbl, 17, 2)
+        self.grid_layout.addWidget(self.mean_motion_lbl, 18, 2)
+        self.grid_layout.addWidget(self.epoch_year_lbl, 19, 2)
+        self.grid_layout.addWidget(self.epoch_day_lbl, 20, 2)
+        self.grid_layout.addWidget(self.id_launch_year_lbl, 21, 2)
+        self.grid_layout.addWidget(self.id_launch_number_lbl, 22, 2)
+        self.grid_layout.addWidget(self.id_launch_piece_lbl, 23, 2)
+        self.grid_layout.addWidget(self.element_number_lbl, 24, 2)
+        self.grid_layout.addWidget(self.ephemeris_type_lbl, 25, 2)
+        self.grid_layout.addWidget(self.classification_lbl, 26, 2)
 
-        self.setLayout(grid_layout)
+        self.grid_layout.setColumnMinimumWidth(0, 200)
+        self.grid_layout.setColumnMinimumWidth(2, 200)
+
+        self.setLayout(self.grid_layout)
 
     def update_data(self, orb):
+        now = datetime.utcnow()
+        # TODO EXCEPTION
+        lon, lat, alt = orb.get_lonlatalt(now)
+        if self.settings:
+            az, el = orb.get_observer_look(now,
+                                           float(self.settings.value("general_settings/observer_longitude", 0)),
+                                           float(self.settings.value("general_settings/observer_latitude", 0)),
+                                           float(self.settings.value("general_settings/observer_altitude", 0)))
+            self.azimuth_lbl.setText(str(az))
+            self.elevation_lbl.setText(str(el))
+
+        self.longitude_lbl.setText(str(lon))
+        self.latitude_lbl.setText(str(lat))
+        self.altitude_lbl.setText(str(alt))
         self.epoch_lbl.setText(str(orb.orbit_elements.epoch))
         self.eccentricity_lbl.setText(str(orb.orbit_elements.excentricity))
         self.inclination_lbl.setText(str(orb.orbit_elements.inclination))
@@ -127,8 +146,6 @@ class SatelliteDataWidget(QWidget):
         self.mean_motion_lbl.setText(str(orb.orbit_elements.mean_motion))
         self.epoch_year_lbl.setText(str(orb.tle.epoch_year))
         self.epoch_day_lbl.setText(str(orb.tle.epoch_day))
-
-        # TODO long, lat, alt, az, el
 
         # self.right_ascension_lon_lbl.setText(str(orb.orbit_elements.right_ascension_lon)
         # self.mean_motion_derivative_lbl.setText(str(orb.tle.mean_motion_derivative)

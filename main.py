@@ -5,6 +5,7 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import *
 
 from utils.lines import *
+from utils.prediction_window import PredictionWindow
 from utils.settings_window import SettingsWindow
 from utils.tle_handler import *
 
@@ -47,11 +48,12 @@ class MainWindow(QMainWindow):
         self.create_status_bar()
 
         self.settings_window = SettingsWindow()
+        self.prediction_window = PredictionWindow()
         self.settings = self.settings_window.settings
 
         self.map_widget = MapWidget(settings_window=self.settings_window)
         self.tle_list_widget = TleListWidget(self.update_map_widget, data_slot=self.update_sat_data)
-        self.satellite_data_widget = SatelliteDataWidget()
+        self.satellite_data_widget = SatelliteDataWidget(settings=self.settings)
         self.antenna_graph_widget = AntennaGraphWidget()
         self.antenna_pose_vel_widget = AntennaPosVelWidget()
         self.antenna_adjustment_widget = AntennaAdjustmentWidget(self.settings)
@@ -91,6 +93,7 @@ class MainWindow(QMainWindow):
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_map_widget)
+        self.timer.timeout.connect(self.update_sat_data)
         self.timer.start(int(self.settings.value("general_settings/map_update_period", 1000)))
 
     def update_map_widget(self):
@@ -99,9 +102,10 @@ class MainWindow(QMainWindow):
         self.map_widget.update_map(orb_list)
 
     def update_sat_data(self):
-        tle = get_tle_by_index(self.tle_list_widget.selectedIndexes()[0].row())
-        orb = get_orb_by_tle(tle)
-        self.satellite_data_widget.update_data(orb)
+        if self.tle_list_widget.selectedIndexes():
+            tle = get_tle_by_index(self.tle_list_widget.selectedIndexes()[0].row())
+            orb = get_orb_by_tle(tle)
+            self.satellite_data_widget.update_data(orb)
 
     def add_to_tle_list_widget(self, sat_id=None, tle=None):
         th = TleHandler()
@@ -150,7 +154,7 @@ class MainWindow(QMainWindow):
         right_vbox = QVBoxLayout()
         right_vbox.setContentsMargins(5, 10, 10, 0)
         btn_widget = QWidget()
-        btn_box = QHBoxLayout()
+        btn_grid = QGridLayout()
 
         add_btn = QPushButton("+", self)
         add_btn.setToolTip("Add TLE to the list")
@@ -166,13 +170,18 @@ class MainWindow(QMainWindow):
 
         send_btn = QPushButton("Send", self)
         send_btn.setToolTip("Send TLE")
-        update_btn.clicked.connect(self.send_btn_clicked)
+        send_btn.clicked.connect(self.send_btn_clicked)
 
-        btn_box.addWidget(add_btn)
-        btn_box.addWidget(remove_btn)
-        btn_box.addWidget(update_btn)
-        btn_box.addWidget(send_btn)
-        btn_widget.setLayout(btn_box)
+        predict_btn = QPushButton("Predict", self)
+        predict_btn.setToolTip("Make prediction")
+        predict_btn.clicked.connect(self.predict_btn_clicked)
+
+        btn_grid.addWidget(predict_btn, 0, 0, 1, 4)
+        btn_grid.addWidget(send_btn, 0, 4, 1, 4)
+        btn_grid.addWidget(add_btn, 2, 0, 1, 2)
+        btn_grid.addWidget(remove_btn, 2, 3, 1, 2)
+        btn_grid.addWidget(update_btn, 2, 6, 1, 2)
+        btn_widget.setLayout(btn_grid)
 
         splitter = QSplitter(Qt.Vertical)
         splitter.addWidget(self.tle_list_widget)
@@ -242,6 +251,15 @@ class MainWindow(QMainWindow):
                 if ret:
                     QMessageBox.information(self, "Something is wrong", str(ret) + "is not satellite ID",
                                             QMessageBox.Ok)
+
+    def predict_btn_clicked(self):
+        if self.tle_list_widget.selectedIndexes():
+            tle = get_tle_by_index(self.tle_list_widget.selectedIndexes()[0].row())
+            orb = get_orb_by_tle(tle)
+            self.prediction_window = PredictionWindow(settings=self.settings, orb=orb)
+            self.prediction_window.show()
+        else:
+            QMessageBox.information(self, "Prediction", "Select satellite first!", QMessageBox.Ok)
 
     def create_status_bar(self):
         # self.statusBar().showMessage("")

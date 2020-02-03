@@ -33,19 +33,12 @@ class MapWidget(QWidget):
         self.mcc = QLabel("", self)
         self.mcc.setPixmap(
             QPixmap(MCC_ICON_PATH).scaled(MCC_ICON_SIZE, MCC_ICON_SIZE, Qt.KeepAspectRatio, Qt.FastTransformation))
-        # self.mcc.setAlignment(Qt.AlignLeft | Qt.AlignTop)
-        # mcc_coordinates = [float(self.settings_window.settings.value("general_settings/observer_longitude", 0)),
-        #                    float(self.settings_window.settings.value("general_settings/observer_latitude", 0)),
-        #                    float(self.settings_window.settings.value("general_settings/observer_altitude", 0))]
         self.mcc_qpoint = [
             QPointF(float(self.settings_window.settings.value("general_settings/observer_longitude", 0)) + 180,
                     -float(self.settings_window.settings.value("general_settings/observer_latitude", 0)) + 90)]
         scaled_mcc_qpoint = qpoints_scaling(self.width(), self.height(), self.mcc_qpoint)[0]
-        print(self.mcc.geometry())
         self.mcc.setGeometry(scaled_mcc_qpoint.x() - MCC_ICON_SIZE / 2, scaled_mcc_qpoint.y() - MCC_ICON_SIZE / 2,
                              MCC_ICON_SIZE, MCC_ICON_SIZE)
-        print(self.mcc.geometry())
-        # self.mcc.setGeometry(0, 0, 0, 0)
 
         self.stacked_layout.addWidget(self.mcc)
 
