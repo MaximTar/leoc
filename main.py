@@ -174,7 +174,16 @@ class MainWindow(QMainWindow):
         btn_box.addWidget(send_btn)
         btn_widget.setLayout(btn_box)
 
-        right_vbox.addWidget(self.tle_list_widget)
+        splitter = QSplitter(Qt.Vertical)
+        splitter.addWidget(self.tle_list_widget)
+        scroll_area = QScrollArea()
+        scroll_area.setWidget(self.satellite_data_widget)
+        splitter.addWidget(scroll_area)
+
+        splitter.setStretchFactor(0, 9)
+        splitter.setStretchFactor(1, 1)
+
+        right_vbox.addWidget(splitter)
         right_vbox.addWidget(btn_widget)
         right_widget.setLayout(right_vbox)
         return right_widget
