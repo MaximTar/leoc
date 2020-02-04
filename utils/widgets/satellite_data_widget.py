@@ -105,26 +105,37 @@ class SatelliteDataWidget(QWidget):
         self.grid_layout.addWidget(self.ephemeris_type_lbl, 25, 2)
         self.grid_layout.addWidget(self.classification_lbl, 26, 2)
 
-        self.grid_layout.setColumnMinimumWidth(0, 200)
+        self.grid_layout.setColumnMinimumWidth(0, 150)
         self.grid_layout.setColumnMinimumWidth(2, 200)
 
         self.setLayout(self.grid_layout)
 
+    # noinspection PyBroadException
     def update_data(self, orb):
         now = datetime.utcnow()
-        # TODO EXCEPTION
-        lon, lat, alt = orb.get_lonlatalt(now)
-        if self.settings:
-            az, el = orb.get_observer_look(now,
-                                           float(self.settings.value("general_settings/observer_longitude", 0)),
-                                           float(self.settings.value("general_settings/observer_latitude", 0)),
-                                           float(self.settings.value("general_settings/observer_altitude", 0)))
-            self.azimuth_lbl.setText(str(az))
-            self.elevation_lbl.setText(str(el))
 
-        self.longitude_lbl.setText(str(lon))
-        self.latitude_lbl.setText(str(lat))
-        self.altitude_lbl.setText(str(alt))
+        try:
+            if self.settings:
+                az, el = orb.get_observer_look(now,
+                                               float(self.settings.value("general_settings/observer_longitude", 0)),
+                                               float(self.settings.value("general_settings/observer_latitude", 0)),
+                                               float(self.settings.value("general_settings/observer_altitude", 0)))
+                self.azimuth_lbl.setText(str(az))
+                self.elevation_lbl.setText(str(el))
+        except Exception:
+            self.azimuth_lbl.setText("No data")
+            self.elevation_lbl.setText("No data")
+
+        try:
+            lon, lat, alt = orb.get_lonlatalt(now)
+            self.longitude_lbl.setText(str(lon))
+            self.latitude_lbl.setText(str(lat))
+            self.altitude_lbl.setText(str(alt))
+        except Exception:
+            self.longitude_lbl.setText("No data")
+            self.latitude_lbl.setText("No data")
+            self.altitude_lbl.setText("No data")
+
         self.epoch_lbl.setText(str(orb.orbit_elements.epoch))
         self.eccentricity_lbl.setText(str(orb.orbit_elements.excentricity))
         self.inclination_lbl.setText(str(orb.orbit_elements.inclination))

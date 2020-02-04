@@ -31,7 +31,7 @@ from utils.widgets.tle_list_widget import TleListWidget
 #
 # sys.stderr = DevNull()  # Suppressing the error messages
 
-
+# TODO AFTER-AFTER Time simulation mode
 # noinspection PyUnresolvedReferences,PyCallByClass,PyArgumentList
 class MainWindow(QMainWindow):
     class Status(Enum):
@@ -44,6 +44,9 @@ class MainWindow(QMainWindow):
 
         main_hbox = QHBoxLayout()
         main_hbox.setContentsMargins(10, 10, 10, 0)
+
+        self.dt_status = self.Status.NOT_OK
+        self.statuses = [self.dt_status]
 
         self.create_status_bar()
 
@@ -58,32 +61,36 @@ class MainWindow(QMainWindow):
         self.antenna_pose_vel_widget = AntennaPosVelWidget()
         self.antenna_adjustment_widget = AntennaAdjustmentWidget(self.settings)
         self.antenna_control_widget = AntennaControlWidget(self.settings)
-        self.antenna_time_widget = AntennaTimeWidget()
+        self.antenna_time_widget = AntennaTimeWidget(dt_slot=self.set_dt)
         self.antenna_video_widget = AntennaVideoWidget(self.settings)
 
         self.map_widget.set_uncheck_list_and_slot(self.tle_list_widget.checked_indices_list,
                                                   self.tle_list_widget.uncheck_item)
 
-        # TODO check on combobox changed
-        # self.dt = None
-        # dt_result = self.antenna_time_widget.get_time_delta()
-        # if dt_result == AntennaTimeWidget.TimeResult.OK:
-        #     self.dt = self.antenna_time_widget.dt
-        #     self.status = self.Status.OK
-        # elif dt_result == AntennaTimeWidget.TimeResult.SERVERS_UNAVAILABLE:
-        #     QMessageBox.warning(self, "No time received", "NTP servers are unavailable", QMessageBox.Ok)
-        #     self.status = self.Status.NOT_OK
-        # elif dt_result == AntennaTimeWidget.TimeResult.NO_CONNECTION:
-        #     QMessageBox.warning(self, "No time received", "Check your internet connection", QMessageBox.Ok)
-        #     self.status = self.Status.NOT_OK
+        self.dt = None
+        dt_result = self.antenna_time_widget.get_time_delta()
+        if dt_result == AntennaTimeWidget.TimeResult.OK:
+            self.dt = self.antenna_time_widget.dt
+            self.dt_status = self.Status.OK
+        elif dt_result == AntennaTimeWidget.TimeResult.SERVERS_UNAVAILABLE:
+            QMessageBox.warning(self, "No time received", "NTP servers are unavailable", QMessageBox.Ok)
+            self.dt_status = self.Status.NOT_OK
+        elif dt_result == AntennaTimeWidget.TimeResult.NO_CONNECTION:
+            QMessageBox.warning(self, "No time received", "Check your internet connection", QMessageBox.Ok)
+            self.dt_status = self.Status.NOT_OK
 
         splitter = QSplitter(Qt.Horizontal)
-        splitter.setStretchFactor(1, 1)
 
-        splitter.addWidget(self.construct_left_widget())
-        splitter.addWidget(self.map_widget)
-        splitter.addWidget(self.construct_right_widget())
+        lw = self.construct_left_widget()
+        lw.setMinimumSize(250, 400)
+        splitter.addWidget(lw)
+        mw = self.map_widget
+        splitter.addWidget(mw)
+        rw = self.construct_right_widget()
+        rw.setMinimumSize(250, 400)
+        splitter.addWidget(rw)
 
+        splitter.setSizes([0, 640, 0])
         main_hbox.addWidget(splitter)
 
         # noinspection PyArgumentList
@@ -95,6 +102,11 @@ class MainWindow(QMainWindow):
         self.timer.timeout.connect(self.update_map_widget)
         self.timer.timeout.connect(self.update_sat_data)
         self.timer.start(int(self.settings.value("general_settings/map_update_period", 1000)))
+
+    def set_dt(self, dt):
+        if dt:
+            self.dt = dt
+            self.dt_status = self.Status.OK
 
     def update_map_widget(self):
         tle_list = get_tle_list_by_indices(self.tle_list_widget.checked_indices_list)
@@ -176,11 +188,12 @@ class MainWindow(QMainWindow):
         predict_btn.setToolTip("Make prediction")
         predict_btn.clicked.connect(self.predict_btn_clicked)
 
-        btn_grid.addWidget(predict_btn, 0, 0, 1, 4)
-        btn_grid.addWidget(send_btn, 0, 4, 1, 4)
-        btn_grid.addWidget(add_btn, 2, 0, 1, 2)
-        btn_grid.addWidget(remove_btn, 2, 3, 1, 2)
-        btn_grid.addWidget(update_btn, 2, 6, 1, 2)
+        btn_grid.addWidget(predict_btn, 0, 0, 1, 10)
+        btn_grid.addWidget(send_btn, 0, 10, 1, 10)
+        btn_grid.addWidget(add_btn, 2, 0, 1, 6)
+        btn_grid.addWidget(remove_btn, 2, 7, 1, 6)
+        btn_grid.addWidget(update_btn, 2, 14, 1, 6)
+
         btn_widget.setLayout(btn_grid)
 
         splitter = QSplitter(Qt.Vertical)
@@ -266,12 +279,12 @@ class MainWindow(QMainWindow):
         status_lbl = QLabel("Status: ")
 
         settings_btn = QPushButton("", self)
-        settings_btn.setIcon(QIcon("resources/icons/settings.png"))
+        settings_btn.setIcon(QIcon(os.path.dirname(os.path.abspath(__file__)) + "/resources/icons/settings.png"))
         settings_btn.setIconSize(QSize(20, 20))
         settings_btn.clicked.connect(self.show_settings_window)
 
         status_btn = QPushButton("", self)
-        status_btn.setIcon(QIcon("resources/icons/status_ok.png"))
+        status_btn.setIcon(QIcon(os.path.dirname(os.path.abspath(__file__)) + "/resources/icons/status_ok.png"))
         status_btn.setIconSize(QSize(20, 20))
 
         self.statusBar().setStyleSheet("QStatusBar {border: 0; background-color: #FFF8DC;}")

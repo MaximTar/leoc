@@ -14,12 +14,12 @@ class PredictionWindow(QMainWindow):
             now = datetime.utcnow()
             # noinspection PyBroadException
             try:
-                predictions = orb.get_next_passes(now, int(settings.value("prediction/hours_passes", 24)),
+                predictions = orb.get_next_passes(now, int(settings.value("general_settings/hours_passes", 24)),
                                                   float(settings.value("general_settings/observer_longitude", 0)),
                                                   float(settings.value("general_settings/observer_latitude", 0)),
                                                   float(settings.value("general_settings/observer_altitude", 0)),
                                                   tol=0.001,
-                                                  horizon=int(settings.value("prediction/horizon_angle", 0)))
+                                                  horizon=int(settings.value("general_settings/horizon_angle", 0)))
                 table_widget = QTableWidget(self)
                 table_widget.setColumnCount(3)
                 rows = len(predictions)

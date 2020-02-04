@@ -13,7 +13,7 @@ ST_USERNAME = "max_131092@mail.ru"
 ST_PASSWORD = "Acslacslacslacsl"
 
 dir_name = os.path.dirname(os.path.realpath(__file__))
-file_name = os.path.join(dir_name, '../resources/tle')
+file_name = os.path.join(dir_name, "../resources/tle")
 if not os.path.exists(file_name):
     with open(file_name, 'w'):
         pass

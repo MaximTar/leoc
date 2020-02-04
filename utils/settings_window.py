@@ -5,7 +5,6 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QTabWidget, QGridLayout, QLabe
 from utils.lines import *
 import os
 
-# TODO rewrite other paths
 SETTINGS_PATH = os.path.dirname(os.path.abspath(__file__)) + "/../resources/settings.ini"
 
 AZIMUTH_SPINBOX_RANGE_MIN = -6
@@ -43,11 +42,12 @@ class SettingsWindow(QMainWindow):
         upd_lbl = QLabel("Update rate [ms]", self)
         upd_lbl.setToolTip("Map widget update rate in milliseconds")
         general_layout.addWidget(upd_lbl, 5, 0)
-
-        # fillers
-        general_layout.addWidget(QLabel("", self), 6, 0)
-        general_layout.addWidget(QLabel("", self), 7, 0)
-        general_layout.addWidget(QLabel("", self), 8, 0)
+        general_layout.addWidget(HLine(), 6, 0, 1, -1)
+        general_layout.addWidget(QLabel("Prediction:", self), 7, 0, 1, -1)
+        len_lbl = QLabel("Length [h]", self)
+        len_lbl.setToolTip("The elevation of horizon to compute rise time and fall time")
+        general_layout.addWidget(len_lbl, 8, 0)
+        general_layout.addWidget(QLabel("Horizon angle", self), 9, 0)
 
         # right column
         self.latitude_spinbox = QDoubleSpinBox(self)
@@ -61,17 +61,27 @@ class SettingsWindow(QMainWindow):
         self.longitude_spinbox.setValue(self.settings.value("observer_longitude", type=float))
 
         self.altitude_spinbox = QDoubleSpinBox(self)
-        self.altitude_spinbox.setRange(-10925, 6265)
+        self.altitude_spinbox.setRange(-11000, 11000)
         self.altitude_spinbox.setValue(self.settings.value("observer_altitude", type=float))
 
         self.upd_rate_spinbox = QSpinBox(self)
         self.upd_rate_spinbox.setRange(1, 2147483644)
         self.upd_rate_spinbox.setValue(self.settings.value("map_update_period", type=int))
 
+        self.hours_passes_spinbox = QSpinBox(self)
+        self.hours_passes_spinbox.setRange(1, 2147483644)
+        self.hours_passes_spinbox.setValue(self.settings.value("hours_passes", type=int))
+
+        self.horizon_angle_spinbox = QSpinBox(self)
+        self.horizon_angle_spinbox.setRange(0, 89)
+        self.horizon_angle_spinbox.setValue(self.settings.value("horizon_angle", type=int))
+
         general_layout.addWidget(self.latitude_spinbox, 1, 2)
         general_layout.addWidget(self.longitude_spinbox, 2, 2)
         general_layout.addWidget(self.altitude_spinbox, 3, 2)
         general_layout.addWidget(self.upd_rate_spinbox, 5, 2)
+        general_layout.addWidget(self.hours_passes_spinbox, 8, 2)
+        general_layout.addWidget(self.horizon_angle_spinbox, 9, 2)
 
         self.settings.endGroup()
         general_tab.setLayout(general_layout)
@@ -95,6 +105,7 @@ class SettingsWindow(QMainWindow):
         antenna_video_layout.addWidget(QLabel("", self), 6, 0)
         antenna_video_layout.addWidget(QLabel("", self), 7, 0)
         antenna_video_layout.addWidget(QLabel("", self), 8, 0)
+        antenna_video_layout.addWidget(QLabel("", self), 9, 0)
 
         # right column
         self.camera_address_line_edit = QLineEdit(self)
@@ -132,6 +143,9 @@ class SettingsWindow(QMainWindow):
         antenna_control_layout.addWidget(QLabel("Range min", self), 6, 0)
         antenna_control_layout.addWidget(QLabel("Range max", self), 7, 0)
         antenna_control_layout.addWidget(QLabel("Step", self), 8, 0)
+
+        # filler
+        antenna_control_layout.addWidget(QLabel("", self), 9, 0)
 
         # right column
         self.azimuth_range_min_spinbox = QDoubleSpinBox(self)
@@ -198,6 +212,8 @@ class SettingsWindow(QMainWindow):
         self.settings.setValue("general_settings/observer_longitude", self.longitude_spinbox.value())
         self.settings.setValue("general_settings/observer_altitude", self.altitude_spinbox.value())
         self.settings.setValue("general_settings/map_update_period", self.upd_rate_spinbox.value())
+        self.settings.setValue("general_settings/hours_passes", self.hours_passes_spinbox.value())
+        self.settings.setValue("general_settings/horizon_angle", self.horizon_angle_spinbox.value())
 
         self.settings.setValue("antenna_video/address", self.camera_address_line_edit.text())
         self.settings.setValue("antenna_video/min_width", self.min_width_spinbox.value())
