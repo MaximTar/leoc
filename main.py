@@ -35,8 +35,8 @@ from utils.widgets.tle_list_widget import TleListWidget
 # noinspection PyUnresolvedReferences,PyCallByClass,PyArgumentList
 class MainWindow(QMainWindow):
     class Status(Enum):
-        OK = 0
-        NOT_OK = 1
+        OK = 1
+        NOT_OK = 0
 
     def __init__(self):
         super().__init__()
@@ -45,8 +45,13 @@ class MainWindow(QMainWindow):
         main_hbox = QHBoxLayout()
         main_hbox.setContentsMargins(10, 10, 10, 0)
 
+        # TODO strange shit... Do we really need this?
+        self.send_btn = QPushButton("Send", self)
+        self.send_btn.setToolTip("Send TLE")
+        self.send_btn.clicked.connect(self.send_btn_clicked)
+        self.send_btn.setEnabled(False)
+
         self.dt_status = self.Status.NOT_OK
-        self.statuses = [self.dt_status]
 
         self.create_status_bar()
 
@@ -70,7 +75,7 @@ class MainWindow(QMainWindow):
         self.dt = None
         dt_result = self.antenna_time_widget.get_time_delta()
         if dt_result == AntennaTimeWidget.TimeResult.OK:
-            self.dt = self.antenna_time_widget.dt
+            self.set_dt(self.antenna_time_widget.dt)
             self.dt_status = self.Status.OK
         elif dt_result == AntennaTimeWidget.TimeResult.SERVERS_UNAVAILABLE:
             QMessageBox.warning(self, "No time received", "NTP servers are unavailable", QMessageBox.Ok)
@@ -107,6 +112,7 @@ class MainWindow(QMainWindow):
         if dt:
             self.dt = dt
             self.dt_status = self.Status.OK
+            self.update_set_btn_state()
 
     def update_map_widget(self):
         tle_list = get_tle_list_by_indices(self.tle_list_widget.checked_indices_list)
@@ -180,16 +186,12 @@ class MainWindow(QMainWindow):
         update_btn.setToolTip("Update")
         update_btn.clicked.connect(self.update_btn_clicked)
 
-        send_btn = QPushButton("Send", self)
-        send_btn.setToolTip("Send TLE")
-        send_btn.clicked.connect(self.send_btn_clicked)
-
         predict_btn = QPushButton("Predict", self)
         predict_btn.setToolTip("Make prediction")
         predict_btn.clicked.connect(self.predict_btn_clicked)
 
         btn_grid.addWidget(predict_btn, 0, 0, 1, 10)
-        btn_grid.addWidget(send_btn, 0, 10, 1, 10)
+        btn_grid.addWidget(self.send_btn, 0, 10, 1, 10)
         btn_grid.addWidget(add_btn, 2, 0, 1, 6)
         btn_grid.addWidget(remove_btn, 2, 7, 1, 6)
         btn_grid.addWidget(update_btn, 2, 14, 1, 6)
@@ -209,6 +211,9 @@ class MainWindow(QMainWindow):
         right_vbox.addWidget(btn_widget)
         right_widget.setLayout(right_vbox)
         return right_widget
+
+    def update_set_btn_state(self):
+        self.send_btn.setEnabled(self.dt_status.value)
 
     def add_btn_clicked(self):
         add_box = QMessageBox(self)
