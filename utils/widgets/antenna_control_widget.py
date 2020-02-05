@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import QGridLayout, QGroupBox, QLabel, QDoubleSpinBox, QPus
 
 
 class AntennaControlWidget(QGroupBox):
-    def __init__(self, settings):
+    def __init__(self):
         super().__init__()
         # self.setTitle("Change antenna's azimuth and/or elevation offset")
 

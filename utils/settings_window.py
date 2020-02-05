@@ -16,12 +16,16 @@ ELEVATION_STEP_SPINBOX_RANGE_MAX = 1
 
 
 class SettingsWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, parent_upd_slot=None):
         super().__init__()
         self.setWindowTitle("Settings")
         self.setWindowModality(Qt.ApplicationModal)
 
         self.settings = QSettings(SETTINGS_PATH, QSettings.IniFormat)
+
+        self.upd_slot = None
+        if parent_upd_slot:
+            self.upd_slot = parent_upd_slot
 
         main_vbox_layout = QVBoxLayout()
         self.tabs = QTabWidget()
@@ -226,5 +230,7 @@ class SettingsWindow(QMainWindow):
         self.settings.setValue("antenna_control/elevation_spinbox_range_max", self.elevation_range_max_spinbox.value())
         self.settings.setValue("antenna_control/elevation_spinbox_step", self.elevation_step_spinbox.value())
 
-        # TODO refresh classes, that use these parameters
         self.settings.sync()
+
+        if self.upd_slot:
+            self.upd_slot()

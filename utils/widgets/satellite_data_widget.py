@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from PyQt5.QtWidgets import QWidget, QLabel, QGridLayout, QWidgetItem
+from PyQt5.QtWidgets import QWidget, QLabel, QGridLayout
 
 from utils.lines import *
 

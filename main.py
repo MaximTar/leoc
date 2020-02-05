@@ -55,7 +55,7 @@ class MainWindow(QMainWindow):
 
         self.create_status_bar()
 
-        self.settings_window = SettingsWindow()
+        self.settings_window = SettingsWindow(parent_upd_slot=self.update_settings)
         self.prediction_window = PredictionWindow()
         self.settings = self.settings_window.settings
 
@@ -65,7 +65,7 @@ class MainWindow(QMainWindow):
         self.antenna_graph_widget = AntennaGraphWidget()
         self.antenna_pose_vel_widget = AntennaPosVelWidget()
         self.antenna_adjustment_widget = AntennaAdjustmentWidget(self.settings)
-        self.antenna_control_widget = AntennaControlWidget(self.settings)
+        self.antenna_control_widget = AntennaControlWidget()
         self.antenna_time_widget = AntennaTimeWidget(dt_slot=self.set_dt)
         self.antenna_video_widget = AntennaVideoWidget(self.settings)
 
@@ -106,6 +106,19 @@ class MainWindow(QMainWindow):
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_map_widget)
         self.timer.timeout.connect(self.update_sat_data)
+        self.timer.start(int(self.settings.value("general_settings/map_update_period", 1000)))
+
+    #     self.timer2 = QTimer()
+    #     self.timer2.timeout.connect(self.test)
+    #     self.timer2.start(3000)
+    #     self.flag = True
+    #
+    # def test(self):
+    #     if self.flag:
+    #         self.antenna_video_widget.update_thread()
+    #         self.flag = False
+
+    def update_timer(self):
         self.timer.start(int(self.settings.value("general_settings/map_update_period", 1000)))
 
     def set_dt(self, dt):
@@ -308,8 +321,10 @@ class MainWindow(QMainWindow):
         pass
 
     def update_settings(self):
-        # TODO
-        pass
+        self.update_timer()
+        self.antenna_adjustment_widget.update_steps()
+        self.antenna_video_widget.update_thread()
+        self.map_widget.update_mcc_qpoint()
 
 
 if __name__ == "__main__":

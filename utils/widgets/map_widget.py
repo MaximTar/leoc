@@ -59,6 +59,11 @@ class MapWidget(QWidget):
         # context menu
         self.installEventFilter(self)
 
+    def update_mcc_qpoint(self):
+        self.mcc_qpoint = [
+            QPointF(float(self.settings_window.settings.value("general_settings/observer_longitude", 0)) + 180,
+                    -float(self.settings_window.settings.value("general_settings/observer_latitude", 0)) + 90)]
+
     def create_sat_lbl(self, orb):
         now = datetime.utcnow()
         sat_lbl = QLabel("", self)

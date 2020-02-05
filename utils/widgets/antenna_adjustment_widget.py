@@ -7,6 +7,8 @@ class AntennaAdjustmentWidget(QGroupBox):
         # self.setTitle("Change antenna's azimuth and/or elevation offset")
 
         self.settings = settings
+        self.azimuth_step = float(self.settings.value("antenna_control/azimuth_spinbox_step", 0.1))
+        self.elevation_step = float(self.settings.value("antenna_control/elevation_spinbox_step", 0.1))
 
         main_layout = QGridLayout()
 
@@ -47,6 +49,10 @@ class AntennaAdjustmentWidget(QGroupBox):
         main_layout.addWidget(save_elevation_btn, 1, 6)
 
         self.setLayout(main_layout)
+
+    def update_steps(self):
+        self.azimuth_step = float(self.settings.value("antenna_control/azimuth_spinbox_step", 0.1))
+        self.elevation_step = float(self.settings.value("antenna_control/elevation_spinbox_step", 0.1))
 
     def azimuth_minus_btn_clicked(self):
         # TODO INTERACTION
