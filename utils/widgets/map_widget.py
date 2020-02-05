@@ -34,7 +34,7 @@ class MapWidget(QWidget):
 
         self.background = QWidget()
         self.background.setStyleSheet("border-image: url('resources/earth.jpg') 0 0 0 0 stretch stretch;")
-        # self.stacked_layout.addWidget(self.background)
+        self.stacked_layout.addWidget(self.background)
 
         self.mcc = QLabel("", self)
         self.mcc.setPixmap(
@@ -49,28 +49,7 @@ class MapWidget(QWidget):
         self.stacked_layout.addWidget(self.mcc)
 
         if self.orb_list is not None:
-            self.sat_labels.clear()
-            self.sat_label_qpoints.clear()
-            for orb in self.orb_list:
-                track = SatelliteTrackWidget(orb)
-                footprint = SatelliteFootprintWidget(orb)
-                sat_lbl, sat_qpoint = self.create_sat_lbl(orb)
-                if track.no_points:
-                    QMessageBox.warning(self, "Warning", "No track available", QMessageBox.Ok)
-                    if self.uncheck_slot and self.idx_list:
-                        idx = orb_list.index(orb)
-                        self.uncheck_slot(self.idx_list[idx])
-                elif footprint.no_points:
-                    QMessageBox.warning(self, "Warning", "No footprint available", QMessageBox.Ok)
-                    if self.uncheck_slot and self.idx_list:
-                        idx = orb_list.index(orb)
-                        self.uncheck_slot(self.idx_list[idx])
-                else:
-                    self.sat_labels.append(sat_lbl)
-                    self.sat_label_qpoints.append(sat_qpoint)
-                    self.stacked_layout.addWidget(sat_lbl)
-                    self.stacked_layout.addWidget(track)
-                    self.stacked_layout.addWidget(footprint)
+            self.add_satellite_widgets()
 
         terminator = TerminatorWidget()
         self.stacked_layout.addWidget(terminator)
@@ -88,9 +67,6 @@ class MapWidget(QWidget):
             QPixmap(SAT_ICON_PATH).scaled(SAT_ICON_SIZE, SAT_ICON_SIZE, Qt.KeepAspectRatio, Qt.FastTransformation))
         lon, lat, _ = orb.get_lonlatalt(now)
         sat_qpoint = [QPointF(lon + 180, -lat + 90)]
-        scaled_sat_qpoint = qpoints_scaling(self.width(), self.height(), sat_qpoint)[0]
-        # sat_lbl.setGeometry(scaled_sat_qpoint.x() - SAT_ICON_SIZE / 2, scaled_sat_qpoint.y() - SAT_ICON_SIZE / 2,
-        #                     SAT_ICON_SIZE, SAT_ICON_SIZE)
         return sat_lbl, sat_qpoint
 
     def paintEvent(self, event):
@@ -104,22 +80,29 @@ class MapWidget(QWidget):
                                 scaled_sat_qpoint.y() - SAT_ICON_SIZE / 2,
                                 SAT_ICON_SIZE, SAT_ICON_SIZE)
 
-        # TODO collect labels and geometries
-        # if self.orb_list:
-        #     for orb in self.orb_list:
-        #         now = datetime.utcnow()
-        #         sat_lbl = QLabel("", self)
-        #         sat_lbl.setAlignment(Qt.AlignLeft | Qt.AlignTop)
-        #         sat_lbl.setPixmap(
-        #             QPixmap(SAT_ICON_PATH).scaled(SAT_ICON_SIZE, SAT_ICON_SIZE, Qt.KeepAspectRatio,
-        #                                           Qt.FastTransformation))
-        #         lon, lat, _ = orb.get_lonlatalt(now)
-        #         sat_qpoint = [QPointF(lon + 180, -lat + 90)]
-        #         scaled_sat_qpoint = qpoints_scaling(self.width(), self.height(), sat_qpoint)[0]
-        #         sat_lbl.setGeometry(scaled_sat_qpoint.x() - SAT_ICON_SIZE / 2,
-        #                             scaled_sat_qpoint.y() - SAT_ICON_SIZE / 2,
-        #                             SAT_ICON_SIZE, SAT_ICON_SIZE)
-        #         self.stacked_layout.addWidget(sat_lbl)
+    def add_satellite_widgets(self):
+        self.sat_labels.clear()
+        self.sat_label_qpoints.clear()
+        for orb in self.orb_list:
+            track = SatelliteTrackWidget(orb)
+            footprint = SatelliteFootprintWidget(orb)
+            sat_lbl, sat_qpoint = self.create_sat_lbl(orb)
+            if track.no_points:
+                QMessageBox.warning(self, "Warning", "No track available", QMessageBox.Ok)
+                if self.uncheck_slot and self.idx_list:
+                    idx = self.orb_list.index(orb)
+                    self.uncheck_slot(self.idx_list[idx])
+            elif footprint.no_points:
+                QMessageBox.warning(self, "Warning", "No footprint available", QMessageBox.Ok)
+                if self.uncheck_slot and self.idx_list:
+                    idx = self.orb_list.index(orb)
+                    self.uncheck_slot(self.idx_list[idx])
+            else:
+                self.sat_labels.append(sat_lbl)
+                self.sat_label_qpoints.append(sat_qpoint)
+                self.stacked_layout.addWidget(track)
+                self.stacked_layout.addWidget(footprint)
+                self.stacked_layout.addWidget(sat_lbl)
 
     def update_map(self, orb_list):
         self.orb_list = orb_list
@@ -130,29 +113,7 @@ class MapWidget(QWidget):
                 self.stacked_layout.itemAt(i).widget().setParent(None)
         # not sure, that this is a good solution
         # insert before background
-        # TODO duplication
-        self.sat_labels.clear()
-        self.sat_label_qpoints.clear()
-        for orb in orb_list:
-            track = SatelliteTrackWidget(orb)
-            footprint = SatelliteFootprintWidget(orb)
-            sat_lbl, sat_qpoint = self.create_sat_lbl(orb)
-            if track.no_points:
-                QMessageBox.warning(self, "Warning", "No track available", QMessageBox.Ok)
-                if self.uncheck_slot and self.idx_list:
-                    idx = orb_list.index(orb)
-                    self.uncheck_slot(self.idx_list[idx])
-            elif footprint.no_points:
-                QMessageBox.warning(self, "Warning", "No footprint available", QMessageBox.Ok)
-                if self.uncheck_slot and self.idx_list:
-                    idx = orb_list.index(orb)
-                    self.uncheck_slot(self.idx_list[idx])
-            else:
-                self.sat_labels.append(sat_lbl)
-                self.sat_label_qpoints.append(sat_qpoint)
-                self.stacked_layout.addWidget(sat_lbl)
-                self.stacked_layout.addWidget(track)
-                self.stacked_layout.addWidget(footprint)
+        self.add_satellite_widgets()
 
         terminator = TerminatorWidget()
         self.stacked_layout.addWidget(terminator)
