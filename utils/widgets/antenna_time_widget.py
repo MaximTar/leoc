@@ -64,7 +64,8 @@ class AntennaTimeWidget(QGroupBox):
         if ping(self.ntp_servers_cbx.currentText()):
             t = ntplib_ntp_time(self.ntp_servers_cbx.currentText())
             if t is not None:
-                self.dt = ntplib_ntp_time(self.ntp_servers_cbx.currentText()) - datetime.utcnow()
+                # self.dt = ntplib_ntp_time(self.ntp_servers_cbx.currentText()) - datetime.utcnow()
+                self.dt = t - datetime.utcnow()
                 self.delta_ok = True
                 if self.dt_slot:
                     self.dt_slot(self.dt)

@@ -1,14 +1,17 @@
 import sys
+from threading import Thread
 
+import rclpy
 from PyQt5.QtCore import QTimer, QSize, Qt
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QColor
 from PyQt5.QtWidgets import *
+from antenna_interfaces.srv import *
 
 from utils.lines import *
 from utils.prediction_window import PredictionWindow
 from utils.settings_window import SettingsWindow
+from utils.subs_and_clients import Subscribers
 from utils.tle_handler import *
-
 from utils.widgets.antenna_adjustment_widget import AntennaAdjustmentWidget
 from utils.widgets.antenna_control_widget import AntennaControlWidget
 from utils.widgets.antenna_graph_widget import AntennaGraphWidget
@@ -45,11 +48,10 @@ class MainWindow(QMainWindow):
         main_hbox = QHBoxLayout()
         main_hbox.setContentsMargins(10, 10, 10, 0)
 
-        # TODO strange shit... Do we really need this?
-        self.send_btn = QPushButton("Send", self)
-        self.send_btn.setToolTip("Send TLE")
-        self.send_btn.clicked.connect(self.send_btn_clicked)
-        self.send_btn.setEnabled(False)
+        self.set_active_btn = QPushButton("Set active", self)
+        self.set_active_btn.setToolTip("Set active satellite")
+        self.set_active_btn.clicked.connect(self.set_active_btn_clicked)
+        self.set_active_btn.setEnabled(False)
 
         self.dt_status = self.Status.NOT_OK
 
@@ -60,7 +62,8 @@ class MainWindow(QMainWindow):
         self.settings = self.settings_window.settings
 
         self.map_widget = MapWidget(settings_window=self.settings_window)
-        self.tle_list_widget = TleListWidget(self.update_map_widget, data_slot=self.update_sat_data)
+        self.tle_list_widget = TleListWidget(subs_and_clients, parent_slot=self.update_map_widget,
+                                             data_slot=self.update_sat_data)
         self.satellite_data_widget = SatelliteDataWidget(settings=self.settings)
         self.antenna_graph_widget = AntennaGraphWidget()
         self.antenna_pose_vel_widget = AntennaPosVelWidget()
@@ -72,17 +75,19 @@ class MainWindow(QMainWindow):
         self.map_widget.set_uncheck_list_and_slot(self.tle_list_widget.checked_indices_list,
                                                   self.tle_list_widget.uncheck_item)
 
+        get_tles(self.tle_list_widget, subs_and_clients)
+
         self.dt = None
-        dt_result = self.antenna_time_widget.get_time_delta()
-        if dt_result == AntennaTimeWidget.TimeResult.OK:
-            self.set_dt(self.antenna_time_widget.dt)
-            self.dt_status = self.Status.OK
-        elif dt_result == AntennaTimeWidget.TimeResult.SERVERS_UNAVAILABLE:
-            QMessageBox.warning(self, "No time received", "NTP servers are unavailable", QMessageBox.Ok)
-            self.dt_status = self.Status.NOT_OK
-        elif dt_result == AntennaTimeWidget.TimeResult.NO_CONNECTION:
-            QMessageBox.warning(self, "No time received", "Check your internet connection", QMessageBox.Ok)
-            self.dt_status = self.Status.NOT_OK
+        # dt_result = self.antenna_time_widget.get_time_delta()
+        # if dt_result == AntennaTimeWidget.TimeResult.OK:
+        #     self.set_dt(self.antenna_time_widget.dt)
+        #     self.dt_status = self.Status.OK
+        # elif dt_result == AntennaTimeWidget.TimeResult.SERVERS_UNAVAILABLE:
+        #     QMessageBox.warning(self, "No time received", "NTP servers are unavailable", QMessageBox.Ok)
+        #     self.dt_status = self.Status.NOT_OK
+        # elif dt_result == AntennaTimeWidget.TimeResult.NO_CONNECTION:
+        #     QMessageBox.warning(self, "No time received", "Check your internet connection", QMessageBox.Ok)
+        #     self.dt_status = self.Status.NOT_OK
 
         splitter = QSplitter(Qt.Horizontal)
 
@@ -107,6 +112,10 @@ class MainWindow(QMainWindow):
         self.timer.timeout.connect(self.update_map_widget)
         self.timer.timeout.connect(self.update_sat_data)
         self.timer.start(int(self.settings.value("general_settings/map_update_period", 1000)))
+
+        self.background_color = None
+        self.rid = None
+        self.check_active_satellite()
 
     #     self.timer2 = QTimer()
     #     self.timer2.timeout.connect(self.test)
@@ -204,7 +213,7 @@ class MainWindow(QMainWindow):
         predict_btn.clicked.connect(self.predict_btn_clicked)
 
         btn_grid.addWidget(predict_btn, 0, 0, 1, 10)
-        btn_grid.addWidget(self.send_btn, 0, 10, 1, 10)
+        btn_grid.addWidget(self.set_active_btn, 0, 10, 1, 10)
         btn_grid.addWidget(add_btn, 2, 0, 1, 6)
         btn_grid.addWidget(remove_btn, 2, 7, 1, 6)
         btn_grid.addWidget(update_btn, 2, 14, 1, 6)
@@ -226,13 +235,13 @@ class MainWindow(QMainWindow):
         return right_widget
 
     def update_set_btn_state(self):
-        self.send_btn.setEnabled(self.dt_status.value)
+        self.set_active_btn.setEnabled(bool(self.dt_status.value))
 
     def add_btn_clicked(self):
         add_box = QMessageBox(self)
         add_box.setStandardButtons(QMessageBox.Cancel)
-        find_btn = add_box.addButton("Find by ID (need internet)", QMessageBox.ActionRole)
-        manual_btn = add_box.addButton("Add manually", QMessageBox.ActionRole)
+        find_btn = add_box.addButton("By ID", QMessageBox.ActionRole)
+        manual_btn = add_box.addButton("Manually", QMessageBox.ActionRole)
         add_box.setDefaultButton(QMessageBox.Cancel)
 
         add_box.exec()
@@ -240,7 +249,28 @@ class MainWindow(QMainWindow):
         if add_box.clickedButton() == find_btn:
             sat_id, ok = QInputDialog.getInt(self, "Find TLE by satellite ID", "Satellite ID", min=0)
             if ok:
-                self.add_to_tle_list_widget(sat_id=sat_id)
+                req = SatsAdd.Request()
+                req.num = str(sat_id)
+                while not subs_and_clients.sat_add_client.wait_for_service(timeout_sec=1.0):
+                    # TODO LOADING
+                    print('Service sat_add_client is not available, waiting...')
+
+                future = subs_and_clients.sat_add_client.call_async(req)
+                while rclpy.ok():
+                    # TODO LOADING
+                    if future.done():
+                        try:
+                            response = future.result()
+                        except Exception as e:
+                            # TODO MSG_BOX
+                            subs_and_clients.get_logger().info(
+                                'Service call failed %r' % (e,))
+                        else:
+                            # TODO MSG_BOX
+                            subs_and_clients.get_logger().info(
+                                'Result: %s' % response)
+                            self.tle_list_widget.update_list()
+                        break
         elif add_box.clickedButton() == manual_btn:
             # noinspection PyTypeChecker
             ManualTleInputWidget(parent=self, parent_slot=self.add_to_tle_list_widget)
@@ -258,7 +288,28 @@ class MainWindow(QMainWindow):
             remove_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
             result = remove_box.exec()
             if result == QMessageBox.Yes:
-                self.remove_from_tle_list_widget(self.tle_list_widget.selectionModel().selectedIndexes()[0].row())
+                req = SatsDel.Request()
+                req.id = int(selected_items[0].statusTip())
+                while not subs_and_clients.sat_del_client.wait_for_service(timeout_sec=1.0):
+                    # TODO LOADING
+                    print('Service sat_del_client is not available, waiting...')
+
+                future = subs_and_clients.sat_del_client.call_async(req)
+                while rclpy.ok():
+                    # TODO LOADING
+                    if future.done():
+                        try:
+                            response = future.result()
+                        except Exception as e:
+                            # TODO MSG_BOX
+                            subs_and_clients.get_logger().info(
+                                'Service call failed %r' % (e,))
+                        else:
+                            # TODO MSG_BOX
+                            subs_and_clients.get_logger().info(
+                                'Result: %s' % response)
+                            self.tle_list_widget.update_list()
+                        break
 
     def update_btn_clicked(self):
         update_box = QMessageBox(self)
@@ -270,10 +321,27 @@ class MainWindow(QMainWindow):
         update_box.exec()
 
         if update_box.clickedButton() == all_btn:
-            ret = update_all_tles()
-            if ret:
-                QMessageBox.information(self, "Something is wrong", ', '.join(ret) + "is not satellite IDs",
-                                        QMessageBox.Ok)
+            req = SatsUpdate.Request()
+            while not subs_and_clients.sat_upd_client.wait_for_service(timeout_sec=1.0):
+                # TODO LOADING
+                print('Service sat_upd_client is not available, waiting...')
+
+            future = subs_and_clients.sat_upd_client.call_async(req)
+            while rclpy.ok():
+                # TODO LOADING
+                if future.done():
+                    try:
+                        response = future.result()
+                    except Exception as e:
+                        # TODO MSG_BOX
+                        subs_and_clients.get_logger().info(
+                            'Service call failed %r' % (e,))
+                    else:
+                        # TODO MSG_BOX
+                        subs_and_clients.get_logger().info(
+                            'Result: %s' % response)
+                    break
+
         elif update_box.clickedButton() == selected_btn:
             if not self.tle_list_widget.selectedItems():
                 QMessageBox.information(self, "Update TLE", "No TLE selected", QMessageBox.Ok)
@@ -316,9 +384,42 @@ class MainWindow(QMainWindow):
     def show_settings_window(self):
         self.settings_window.show()
 
-    def send_btn_clicked(self):
-        # TODO INTERACTION
-        pass
+    def set_active_btn_clicked(self):
+        req = SatsActiveSet.Request()
+        req.is_on = (self.set_active_btn.text() == "Set active")
+
+        if req.is_on:
+            self.rid = self.tle_list_widget.selectedItems()[0]
+            req.id = int(self.rid.statusTip())
+
+        if not self.background_color:
+            self.background_color = self.rid.background()
+
+        while not subs_and_clients.sat_set_active_client.wait_for_service(timeout_sec=1.0):
+            # TODO LOADING
+            print('Service sat_upd_client is not available, waiting...')
+
+        future = subs_and_clients.sat_set_active_client.call_async(req)
+        while rclpy.ok():
+            # TODO LOADING
+            if future.done():
+                try:
+                    response = future.result()
+                except Exception as e:
+                    # TODO MSG_BOX
+                    subs_and_clients.get_logger().info(
+                        'Service call failed %r' % (e,))
+                else:
+                    # TODO MSG_BOX
+                    subs_and_clients.get_logger().info(
+                        'Result: %s' % response)
+                    if self.set_active_btn.text() == "Set active":
+                        self.set_active_btn.setText("Set inactive")
+                        self.rid.setBackground(QColor("#9ee99e"))
+                    else:
+                        self.set_active_btn.setText("Set active")
+                        self.rid.setBackground(self.background_color)
+                break
 
     def update_settings(self):
         self.update_timer()
@@ -326,10 +427,45 @@ class MainWindow(QMainWindow):
         self.antenna_video_widget.update_thread()
         self.map_widget.update_mcc_qpoint()
 
+    def check_active_satellite(self):
+        req = SatsActive.Request()
+
+        while not subs_and_clients.sat_active_client.wait_for_service(timeout_sec=1.0):
+            # TODO LOADING
+            print('Service sat_upd_client is not available, waiting...')
+
+        future = subs_and_clients.sat_active_client.call_async(req)
+        while rclpy.ok():
+            # TODO LOADING
+            if future.done():
+                try:
+                    response = future.result()
+                except Exception as e:
+                    # TODO MSG_BOX
+                    subs_and_clients.get_logger().info(
+                        'Service call failed %r' % (e,))
+                else:
+                    if response.is_on:
+                        for i in range(self.tle_list_widget.count()):
+                            if int(self.tle_list_widget.item(i).statusTip()) == response.id:
+                                self.rid = self.tle_list_widget.item(i)
+                                self.background_color = self.rid.background()
+                                self.tle_list_widget.item(i).setBackground(QColor("#9ee99e"))
+                                self.set_active_btn.setText("Set inactive")
+                break
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
+    rclpy.init()
+    subs_and_clients = Subscribers()
+    spin_thread = Thread(target=rclpy.spin, args=(subs_and_clients,))
+    spin_thread.start()
+
     main = MainWindow()
     main.show()
+
+    # subs_and_clients.destroy_node()
+    # rclpy.shutdown()
     sys.exit(app.exec_())

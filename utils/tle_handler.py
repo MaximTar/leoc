@@ -1,19 +1,20 @@
 import os
-
-import spacetrack.operators as op
 from enum import Enum
-from pyorbital.orbital import Orbital
-from requests import get
-from spacetrack import SpaceTrackClient
 
 # Work with indices and satellite identifiers is preferable, since names can be duplicated
 import deprecation
+import spacetrack.operators as op
+from antenna_interfaces.srv import SatsTles
+from pyorbital.orbital import Orbital
+from requests import get
+import rclpy
+from spacetrack import SpaceTrackClient
 
 ST_USERNAME = "max_131092@mail.ru"
 ST_PASSWORD = "Acslacslacslacsl"
 
 dir_name = os.path.dirname(os.path.realpath(__file__))
-file_name = os.path.join(dir_name, "../resources/tle")
+file_name = os.path.join(dir_name, "../resources/tles")
 if not os.path.exists(file_name):
     with open(file_name, 'w'):
         pass
@@ -25,6 +26,13 @@ def save_tle(tle):
         for t in tle:
             f.write(t + '\n')
         f.close()
+
+
+def save_tles(tles):
+    f = open(file_name, 'w')
+    for t in tles:
+        f.write(t + '\n')
+    f.close()
 
 
 def remove_tle_by_index(index):
@@ -261,24 +269,52 @@ def is_tle(tle):
     # noinspection PyBroadException
     try:
         if int(first_line[0]) == 1 \
-            and isinstance(int(first_line[2:7]), int) \
-            and isinstance(int(first_line[9:14]), int) \
-            and isinstance(int(first_line[18:20]), int) \
-            and isinstance(float(first_line[20:32]), float) \
-            and isinstance(float(first_line[33:43]), float) \
-            and int(first_line[62]) == 0 \
-            and isinstance(int(first_line[64:69]), int) \
-            and int(second_line[0]) == 2 \
-            and isinstance(int(second_line[2:7]), int) \
-            and isinstance(float(second_line[8:16]), float) \
-            and isinstance(float(second_line[17:25]), float) \
-            and isinstance(float(second_line[34:42]), float) \
-            and isinstance(float(second_line[43:51]), float) \
-            and isinstance(float(second_line[52:63]), float) \
+                and isinstance(int(first_line[2:7]), int) \
+                and isinstance(int(first_line[9:14]), int) \
+                and isinstance(int(first_line[18:20]), int) \
+                and isinstance(float(first_line[20:32]), float) \
+                and isinstance(float(first_line[33:43]), float) \
+                and int(first_line[62]) == 0 \
+                and isinstance(int(first_line[64:69]), int) \
+                and int(second_line[0]) == 2 \
+                and isinstance(int(second_line[2:7]), int) \
+                and isinstance(float(second_line[8:16]), float) \
+                and isinstance(float(second_line[17:25]), float) \
+                and isinstance(float(second_line[34:42]), float) \
+                and isinstance(float(second_line[43:51]), float) \
+                and isinstance(float(second_line[52:63]), float) \
                 and isinstance(int(second_line[63:69]), int):
             return True
     except BaseException:
         return False
+
+
+def get_tles(tle_list_widget, subs_and_clients):
+    ids = []
+    for i in range(tle_list_widget.count()):
+        ids.append(int(tle_list_widget.item(i).statusTip()))
+    req = SatsTles.Request()
+    req.ids = ids
+    while not subs_and_clients.sat_tles_client.wait_for_service(timeout_sec=1.0):
+        # TODO LOADING
+        print('Service sat_del_client is not available, waiting...')
+
+    future = subs_and_clients.sat_tles_client.call_async(req)
+    while rclpy.ok():
+        # TODO LOADING
+        if future.done():
+            try:
+                response = future.result()
+            except Exception as e:
+                # TODO MSG_BOX
+                subs_and_clients.get_logger().info(
+                    'Service call failed %r' % (e,))
+            else:
+                # TODO MSG_BOX
+                subs_and_clients.get_logger().info(
+                    'Result: %s' % response.tles)
+                save_tles(response.tles)
+            break
 
 
 class TleHandler:
