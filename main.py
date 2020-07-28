@@ -10,14 +10,15 @@ from antenna_interfaces.srv import *
 from utils.lines import *
 from utils.prediction_window import PredictionWindow
 from utils.settings_window import SettingsWindow
-from utils.subs_and_clients import Subscribers
+from utils.subs_and_clients import SubscribersAndClients
 from utils.tle_handler import *
 from utils.widgets.antenna_adjustment_widget import AntennaAdjustmentWidget
 from utils.widgets.antenna_control_widget import AntennaControlWidget
 from utils.widgets.antenna_graph_widget import AntennaGraphWidget
-from utils.widgets.antenna_pose_vel_widget import AntennaPosVelWidget
+from utils.widgets.antenna_pose_widget import AntennaPoseWidget
 from utils.widgets.antenna_time_widget import AntennaTimeWidget
 from utils.widgets.antenna_video_widget import AntennaVideoWidget
+from utils.widgets.login_widget import LoginWidget
 from utils.widgets.manual_tle_input_widget import ManualTleInputWidget
 from utils.widgets.map_widget import MapWidget
 from utils.widgets.satellite_data_widget import SatelliteDataWidget
@@ -66,7 +67,7 @@ class MainWindow(QMainWindow):
                                              data_slot=self.update_sat_data)
         self.satellite_data_widget = SatelliteDataWidget(settings=self.settings)
         self.antenna_graph_widget = AntennaGraphWidget()
-        self.antenna_pose_vel_widget = AntennaPosVelWidget()
+        self.antenna_pose_widget = AntennaPoseWidget()
         self.antenna_adjustment_widget = AntennaAdjustmentWidget(self.settings)
         self.antenna_control_widget = AntennaControlWidget()
         self.antenna_time_widget = AntennaTimeWidget(dt_slot=self.set_dt)
@@ -116,6 +117,11 @@ class MainWindow(QMainWindow):
         self.background_color = None
         self.rid = None
         self.check_active_satellite()
+        subs_and_clients.set_sat_graph_slot(self.antenna_graph_widget.update_graph)
+        subs_and_clients.set_ant_pose_slot(self.antenna_pose_widget.update_pose)
+
+        self.login_widget = LoginWidget()
+        self.login_widget.show()
 
     #     self.timer2 = QTimer()
     #     self.timer2.timeout.connect(self.test)
@@ -182,10 +188,10 @@ class MainWindow(QMainWindow):
         splitter = QSplitter(Qt.Vertical)
         splitter.setStretchFactor(1, 1)
         splitter.addWidget(self.antenna_graph_widget)
-        splitter.addWidget(self.antenna_pose_vel_widget)
+        splitter.addWidget(self.antenna_pose_widget)
         splitter.addWidget(self.antenna_adjustment_widget)
         splitter.addWidget(self.antenna_control_widget)
-        splitter.addWidget(self.antenna_time_widget)
+        # splitter.addWidget(self.antenna_time_widget)
         splitter.addWidget(self.antenna_video_widget)
         return splitter
 
@@ -262,18 +268,41 @@ class MainWindow(QMainWindow):
                         try:
                             response = future.result()
                         except Exception as e:
-                            # TODO MSG_BOX
-                            subs_and_clients.get_logger().info(
-                                'Service call failed %r' % (e,))
+                            QMessageBox.warning(self, "sat_add_client failed", "Cannot add satellite to list.\n"
+                                                                               "Stacktrace: {}".format(e),
+                                                QMessageBox.Ok)
                         else:
-                            # TODO MSG_BOX
-                            subs_and_clients.get_logger().info(
-                                'Result: %s' % response)
+                            # TODO if-else
                             self.tle_list_widget.update_list()
                         break
         elif add_box.clickedButton() == manual_btn:
+            req = TlesUserSet.Request()
+            fname = QFileDialog.getOpenFileName(self, 'Open file', "Text files (*.txt)")[0]
+            f = open(fname, 'r')
+            with f:
+                data = f.read()
+            f.close()
+            req.tles = data
+
+            while not subs_and_clients.usr_tle_set_client.wait_for_service(timeout_sec=1.0):
+                # TODO LOADING
+                print('Service sat_add_client is not available, waiting...')
+
+            future = subs_and_clients.usr_tle_set_client.call_async(req)
+            while rclpy.ok():
+                # TODO LOADING
+                if future.done():
+                    try:
+                        response = future.result()
+                    except Exception as e:
+                        QMessageBox.warning(self, "sat_add_client failed", "Cannot add satellite to list.\n"
+                                                                           "Stacktrace: {}".format(e), QMessageBox.Ok)
+                    else:
+                        # TODO if-else
+                        QMessageBox.information(self, "Done", "TLEs added to user database", QMessageBox.Ok)
+                    break
             # noinspection PyTypeChecker
-            ManualTleInputWidget(parent=self, parent_slot=self.add_to_tle_list_widget)
+            # ManualTleInputWidget(parent=self, parent_slot=self.add_to_tle_list_widget)
 
     def remove_btn_clicked(self):
         remove_box = QMessageBox(self)
@@ -301,10 +330,11 @@ class MainWindow(QMainWindow):
                         try:
                             response = future.result()
                         except Exception as e:
-                            # TODO MSG_BOX
-                            subs_and_clients.get_logger().info(
-                                'Service call failed %r' % (e,))
+                            QMessageBox.warning(self, "sat_del_client failed", "Cannot delete satellite from list.\n"
+                                                                               "Stacktrace: {}".format(e),
+                                                QMessageBox.Ok)
                         else:
+                            # TODO if-else
                             # TODO MSG_BOX
                             subs_and_clients.get_logger().info(
                                 'Result: %s' % response)
@@ -333,10 +363,11 @@ class MainWindow(QMainWindow):
                     try:
                         response = future.result()
                     except Exception as e:
-                        # TODO MSG_BOX
-                        subs_and_clients.get_logger().info(
-                            'Service call failed %r' % (e,))
+                        QMessageBox.warning(self, "sat_upd_client failed", "Cannot update satellites list.\n"
+                                                                           "Stacktrace: {}".format(e),
+                                            QMessageBox.Ok)
                     else:
+                        # TODO if-else
                         # TODO MSG_BOX
                         subs_and_clients.get_logger().info(
                             'Result: %s' % response)
@@ -397,7 +428,7 @@ class MainWindow(QMainWindow):
 
         while not subs_and_clients.sat_set_active_client.wait_for_service(timeout_sec=1.0):
             # TODO LOADING
-            print('Service sat_upd_client is not available, waiting...')
+            print('Service sat_set_active_client is not available, waiting...')
 
         future = subs_and_clients.sat_set_active_client.call_async(req)
         while rclpy.ok():
@@ -406,19 +437,23 @@ class MainWindow(QMainWindow):
                 try:
                     response = future.result()
                 except Exception as e:
-                    # TODO MSG_BOX
-                    subs_and_clients.get_logger().info(
-                        'Service call failed %r' % (e,))
+                    QMessageBox.warning(self, "sat_set_active_client failed", "Cannot set active satellite.\n"
+                                                                              "Stacktrace: {}".format(e),
+                                        QMessageBox.Ok)
                 else:
+                    # TODO if-else
                     # TODO MSG_BOX
                     subs_and_clients.get_logger().info(
                         'Result: %s' % response)
                     if self.set_active_btn.text() == "Set active":
                         self.set_active_btn.setText("Set inactive")
                         self.rid.setBackground(QColor("#9ee99e"))
+                        self.antenna_graph_widget.is_tracking = True
                     else:
                         self.set_active_btn.setText("Set active")
                         self.rid.setBackground(self.background_color)
+                        self.antenna_graph_widget.is_tracking = False
+                        subs_and_clients.sat_azs, subs_and_clients.sat_els = [], []
                 break
 
     def update_settings(self):
@@ -441,9 +476,8 @@ class MainWindow(QMainWindow):
                 try:
                     response = future.result()
                 except Exception as e:
-                    # TODO MSG_BOX
-                    subs_and_clients.get_logger().info(
-                        'Service call failed %r' % (e,))
+                    QMessageBox.warning(self, "sat_upd_client failed", "Cannot check for active satellite.\n"
+                                                                       "Stacktrace: {}".format(e), QMessageBox.Ok)
                 else:
                     if response.is_on:
                         for i in range(self.tle_list_widget.count()):
@@ -452,14 +486,17 @@ class MainWindow(QMainWindow):
                                 self.background_color = self.rid.background()
                                 self.tle_list_widget.item(i).setBackground(QColor("#9ee99e"))
                                 self.set_active_btn.setText("Set inactive")
+                                self.antenna_graph_widget.is_tracking = True
                 break
+
+    # def login(self):
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     rclpy.init()
-    subs_and_clients = Subscribers()
+    subs_and_clients = SubscribersAndClients()
     spin_thread = Thread(target=rclpy.spin, args=(subs_and_clients,))
     spin_thread.start()
 

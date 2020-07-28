@@ -1,7 +1,7 @@
+import numpy as np
+import pyqtgraph as pg
 from PyQt5.QtWidgets import QWidget, QVBoxLayout
 from pyqtgraph.Qt import QtCore
-import pyqtgraph as pg
-import numpy as np
 
 
 class AntennaGraphWidget(QWidget):
@@ -36,14 +36,17 @@ class AntennaGraphWidget(QWidget):
             circle.setPen(pg.mkPen(0.2, style=QtCore.Qt.DotLine))
             self.plot.addItem(circle)
 
-        self.data = self.plot.plot()
+        self.data = self.plot.plot(pen=pg.mkPen(color='r', width=2))
 
         vbox_layout = QVBoxLayout()
         vbox_layout.addWidget(self.plot)
         self.setLayout(vbox_layout)
 
+        self.is_tracking = None
+
     def update_graph(self, azimuth, elevation):
         # azimuth and elevation should be in radians
-        x = elevation * np.cos(azimuth)
-        y = elevation * np.sin(azimuth)
-        self.data.setData(x, y)
+        if self.is_tracking:
+            x = elevation * np.cos(np.deg2rad(azimuth))
+            y = elevation * np.sin(np.deg2rad(azimuth))
+            self.data.setData(x, y)

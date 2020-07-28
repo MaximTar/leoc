@@ -22,12 +22,12 @@ uint8[] /antenna/system/logs/get(string f)
 
 Работа с пользовательской базой TLE
 
-1) Сохранить данные в пользовательский файл TLE
-bool /antenna/tles/user/set (string tles)
-возвращает признак успешности
+- 1) Сохранить данные в пользовательский файл TLE
+- TlesUserSet (bool) /antenna/tles/user/set (string tles)
+- возвращает признак успешности
 
 2) Прочитать данные пользовательского файла TLE
-string /antenna/tles/user ()
+TlesUser (string) /antenna/tles/user ()
 
 Работа со спутниками
 
@@ -65,9 +65,9 @@ string /antenna/tles/user ()
 
 Работа с параметрами антенны (некоторые параметры доступны только администратору)
 
-1) Получить список параметров
-(string[], string[], string[]) /antenna/params/info ()
-возвращает 3 массива, 1 - имена параметров, 2 - типы параметров, 3 - описания параметров
+? 1) Получить список параметров
+? (string[], string[], string[]) /antenna/params/info ()
+? возвращает 3 массива, 1 - имена параметров, 2 - типы параметров, 3 - описания параметров
 
 2) Задать параметры
 принимает массив имен, массив значений и признак хранения (если False - только на время сессии пользователя, если True - хранить постоянно)
@@ -81,13 +81,16 @@ string[] /antenna/params (string[] p, bool global = False)
 
 PubSub издатель - сервер
 
-- 1) Состояние, 10 Гц
-- биты ошибок, углы и угловые скорости антенны
-- State (uint16 error, float el, float az, float elv, float azv) /antenna/state
+1) Состояние, 10 Гц
+биты ошибок, углы и угловые скорости антенны
+State (uint16 error, float el, float az, float elv, float azv) /antenna/state
 
 - 2) Данные активного спутника 10Гц
 - координаты, углы для точки наблюдения (ожидаемые углы для антенны)
-- SatState (float lat, float lon, float alt. float el, float az) /antenna/sat/active
+- SatState (float lat, float lon, float alt, float el, float az) /antenna/sat/active
 
 3) События, которые пишутся в лог файл сервера (режим администратора)
 string /antenna/system/log
+
+
+sudo time_synchronization_with_server
