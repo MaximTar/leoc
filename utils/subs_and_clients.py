@@ -28,6 +28,8 @@ class SubscribersAndClients(Node):
 
         # system
         self.sys_log_client = self.create_client(SysLog, '/antenna/sys/log')
+        self.sys_auth_client = self.create_client(SysAuth, '/antenna/sys/auth')
+        self.sys_deauth_client = self.create_client(SysDeauth, '/antenna/sys/deauth')
 
         # user data
         self.usr_tle_set_client = self.create_client(TlesUserSet, '/antenna/tles/user/set')
@@ -41,18 +43,6 @@ class SubscribersAndClients(Node):
         self.sat_tles_client = self.create_client(SatsTles, '/antenna/sats/tles')
         self.sat_set_active_client = self.create_client(SatsActiveSet, '/antenna/sats/active/set')
         self.sat_active_client = self.create_client(SatsActive, '/antenna/sats/active')
-
-
-
-        # while not self.sys_log_client.wait_for_service(timeout_sec=1.0):
-        #     self.get_logger().info('Service not available, waiting again...')
-        # self.req = SysLog.Request()
-        # self.ok = None
-
-    # def send_request(self, log_msg):
-    #     self.req._txt = str(log_msg)
-    #     # self.req.txt(str(log_msg))
-    #     self.ok = self.sys_log_client.call_async(self.req)
 
     def _active_satellite_state_cb(self, msg):
         self.sat_lat = msg.lat
@@ -74,6 +64,7 @@ class SubscribersAndClients(Node):
         self.ant_az = msg.az
         self.ant_elv = msg.elv
         self.ant_azv = msg.azv
+        # TODO HANDLE ERROR
         self.ant_err_state = msg.err_state
 
         if self.ant_pose_slot:
