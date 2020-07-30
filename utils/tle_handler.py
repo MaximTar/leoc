@@ -293,6 +293,7 @@ def get_tles(tle_list_widget, subs_and_clients):
     ids = []
     for i in range(tle_list_widget.count()):
         ids.append(int(tle_list_widget.item(i).statusTip()))
+    # noinspection PyUnresolvedReferences
     req = SatsTles.Request()
     req.ids = ids
     while not subs_and_clients.sat_tles_client.wait_for_service(timeout_sec=1.0):

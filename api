@@ -1,8 +1,8 @@
 Системные вызовы
 
-1) Передача события на сервер (журналирование)
-bool /antenna/sys/log (string msg)
-возвращает признак успешности операции
+! 1) Передача события на сервер (журналирование)
+! bool /antenna/sys/log (string msg)
+! возвращает признак успешности операции
 
 - 2) Передача логина/пароля для начала сессии пользователя (поскольку канал предполагается зашифрованным)
 - SysAuth (bool, bool) /antenna/sys/auth (string login, string password)
@@ -12,13 +12,13 @@ bool /antenna/sys/log (string msg)
 - bool /antenna/sys/deauth ()
 - возвращает признак успешности операции
 
-4) Запрос списка имен файлов логов (режим администратора)
-string[] /antenna/system/logs/list()
+* 4) Запрос списка имен файлов логов (режим администратора)
+* string[] /antenna/system/logs/list()
 
-5) Получить файл логов (режим администратора)
-принимает имя файла
-uint8[] /antenna/system/logs/get(string f)
-возвращает набор байт
+* 5) Получить файл логов (режим администратора)
+* принимает имя файла
+* uint8[] /antenna/system/logs/get(string f)
+* возвращает набор байт
 
 Работа с пользовательской базой TLE
 
@@ -26,8 +26,8 @@ uint8[] /antenna/system/logs/get(string f)
 - TlesUserSet (bool) /antenna/tles/user/set (string tles)
 - возвращает признак успешности
 
-2) Прочитать данные пользовательского файла TLE
-TlesUser (string) /antenna/tles/user ()
+- 2) Прочитать данные пользовательского файла TLE
+- TlesUser (string) /antenna/tles/user ()
 
 Работа со спутниками
 
@@ -59,9 +59,9 @@ TlesUser (string) /antenna/tles/user ()
 - SatsActive (bool is_on, uint8 id) /antenna/sats/active ()
 - возвращает флаг наличия и id активного спутника
 
-8) Получение массива моментов времени окна связи для спутника
-(time tr, time tf, time tm) /antenna/sats/predict (uint8 id)
-возвращает моменты времени: восход, заход, макс. возвышение
+? 8) Получение массива моментов времени окна связи для спутника
+? (time tr, time tf, time tm) /antenna/sats/predict (uint8 id)
+? возвращает моменты времени: восход, заход, макс. возвышение
 
 Работа с параметрами антенны (некоторые параметры доступны только администратору)
 
@@ -89,8 +89,8 @@ State (uint16 error, float el, float az, float elv, float azv) /antenna/state
 - координаты, углы для точки наблюдения (ожидаемые углы для антенны)
 - SatState (float lat, float lon, float alt, float el, float az) /antenna/sat/active
 
-3) События, которые пишутся в лог файл сервера (режим администратора)
-string /antenna/system/log
+* 3) События, которые пишутся в лог файл сервера (режим администратора)
+* string /antenna/system/log
 
 
 sudo time_synchronization_with_server
