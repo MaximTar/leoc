@@ -7,7 +7,6 @@ from PyQt5.QtWidgets import *
 from antenna_interfaces.srv import *
 
 from utils.lines import *
-from utils.prediction_window import PredictionWindow
 from utils.settings_window import SettingsWindow
 from utils.subs_and_clients import SubscribersAndClients
 from utils.tle_handler import *
@@ -19,6 +18,7 @@ from utils.widgets.antenna_time_widget import AntennaTimeWidget
 from utils.widgets.antenna_video_widget import AntennaVideoWidget
 from utils.widgets.login_widget import LoginWidget
 from utils.widgets.map_widget import MapWidget
+from utils.widgets.prediction_input_widget import PredictionInputWidget
 from utils.widgets.satellite_data_widget import SatelliteDataWidget
 from utils.widgets.tle_list_widget import TleListWidget
 
@@ -61,8 +61,9 @@ class MainWindow(QMainWindow):
         self.status_combo_box = QComboBox(self)
         self.create_status_bar()
 
+        self.prediction_window = PredictionInputWidget(subs_and_clients, parent=self)
+
         self.settings_window = SettingsWindow(parent_upd_slot=self.update_settings)
-        self.prediction_window = PredictionWindow()
         self.settings = self.settings_window.settings
 
         self.map_widget = MapWidget(settings_window=self.settings_window)
@@ -147,32 +148,32 @@ class MainWindow(QMainWindow):
             orb = get_orb_by_tle(tle)
             self.satellite_data_widget.update_data(orb)
 
-    def add_to_tle_list_widget(self, sat_id=None, tle=None):
-        th = TleHandler()
-        if sat_id is not None:
-            if is_sat_id(sat_id):
-                result = th.save_by_sat_id(sat_id)
-            else:
-                QMessageBox.warning(self, "No TLE added", "Wrong satellite ID", QMessageBox.Ok)
-                return
-        elif tle is not None:
-            sat_id = tle[0].split(' ').pop(0)
-            if is_sat_id(sat_id):
-                result = th.save_by_tle(tle)
-            else:
-                QMessageBox.warning(self, "No TLE added", "Wrong satellite ID", QMessageBox.Ok)
-                return
-        else:
-            QMessageBox.warning(self, "No TLE added", "Something went wrong", QMessageBox.Ok)
-            return
-
-        if result == th.Result.IS_NONE:
-            QMessageBox.warning(self, "No TLE added", "Something went wrong", QMessageBox.Ok)
-        elif result == th.Result.ALREADY_EXISTS:
-            sat_name = get_name_by_sat_id(sat_id)
-            QMessageBox.information(self, "Find TLE by ID", "{} TLE already in list".format(sat_name), QMessageBox.Ok)
-        elif result == th.Result.SAVED:
-            self.tle_list_widget.update_list()
+    # def add_to_tle_list_widget(self, sat_id=None, tle=None):
+    #     th = TleHandler()
+    #     if sat_id is not None:
+    #         if is_sat_id(sat_id):
+    #             result = th.save_by_sat_id(sat_id)
+    #         else:
+    #             QMessageBox.warning(self, "No TLE added", "Wrong satellite ID", QMessageBox.Ok)
+    #             return
+    #     elif tle is not None:
+    #         sat_id = tle[0].split(' ').pop(0)
+    #         if is_sat_id(sat_id):
+    #             result = th.save_by_tle(tle)
+    #         else:
+    #             QMessageBox.warning(self, "No TLE added", "Wrong satellite ID", QMessageBox.Ok)
+    #             return
+    #     else:
+    #         QMessageBox.warning(self, "No TLE added", "Something went wrong", QMessageBox.Ok)
+    #         return
+    #
+    #     if result == th.Result.IS_NONE:
+    #         QMessageBox.warning(self, "No TLE added", "Something went wrong", QMessageBox.Ok)
+    #     elif result == th.Result.ALREADY_EXISTS:
+    #         sat_name = get_name_by_sat_id(sat_id)
+    #         QMessageBox.information(self, "Find TLE by ID", "{} TLE already in list".format(sat_name), QMessageBox.Ok)
+    #     elif result == th.Result.SAVED:
+    #         self.tle_list_widget.update_list()
 
     def remove_from_tle_list_widget(self, index):
         remove_tle_by_index(index)
@@ -373,13 +374,13 @@ class MainWindow(QMainWindow):
                 break
 
     def predict_btn_clicked(self):
-        if self.tle_list_widget.selectedIndexes():
-            tle = get_tle_by_index(self.tle_list_widget.selectedIndexes()[0].row())
-            orb = get_orb_by_tle(tle)
-            self.prediction_window = PredictionWindow(settings=self.settings, orb=orb)
-            self.prediction_window.show()
-        else:
-            QMessageBox.information(self, "Prediction", "Select satellite first!", QMessageBox.Ok)
+        self.prediction_window.centerize(self)
+        self.prediction_window.show()
+        # if self.tle_list_widget.selectedIndexes():
+        #     self.prediction_window.centerize(self)
+        #     self.prediction_window.show()
+        # else:
+        #     QMessageBox.information(self, "Prediction", "Select satellite first!", QMessageBox.Ok)
 
     def create_status_bar(self):
         # self.statusBar().showMessage("")

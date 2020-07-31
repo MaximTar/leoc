@@ -3,11 +3,11 @@ from enum import Enum
 
 # Work with indices and satellite identifiers is preferable, since names can be duplicated
 import deprecation
+import rclpy
 import spacetrack.operators as op
 from antenna_interfaces.srv import SatsTles
 from pyorbital.orbital import Orbital
 from requests import get
-import rclpy
 from spacetrack import SpaceTrackClient
 
 ST_USERNAME = "max_131092@mail.ru"

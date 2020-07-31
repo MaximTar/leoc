@@ -45,6 +45,7 @@ class SubscribersAndClients(Node):
         self.sat_tles_client = self.create_client(SatsTles, '/antenna/sats/tles')
         self.sat_set_active_client = self.create_client(SatsActiveSet, '/antenna/sats/active/set')
         self.sat_active_client = self.create_client(SatsActive, '/antenna/sats/active')
+        self.sat_predict_client = self.create_client(SatsPredict, '/antenna/sats/predict')
 
     def _active_satellite_state_cb(self, msg):
         self.sat_lat = msg.lat
