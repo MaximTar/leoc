@@ -12,6 +12,8 @@ class SubscribersAndClients(Node):
         self.ant_pose_slot = None
         self.sat_azs, self.sat_els = [], []
 
+        self.status_slot = None
+
         self.antenna_state_sub = self.create_subscription(
             State,
             '/antenna/state',
@@ -75,3 +77,10 @@ class SubscribersAndClients(Node):
 
     def set_ant_pose_slot(self, ant_pose_slot):
         self.ant_pose_slot = ant_pose_slot
+
+    def set_status_slot(self, status_slot):
+        self.status_slot = status_slot
+
+    def handle_error_state(self):
+        if self.status_slot:
+            self.status_slot(f'{self.ant_err_state:012b}'[::-1])

@@ -45,6 +45,9 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("LEOC")
         # TODO MAKE FUNCTIONAL TO RELOGIN
 
+        self.icon_ok = QIcon(os.path.dirname(os.path.abspath(__file__)) + "/resources/icons/status_ok.png")
+        self.icon_fail = QIcon(os.path.dirname(os.path.abspath(__file__)) + "/resources/icons/status_fail.png")
+
         main_hbox = QHBoxLayout()
         main_hbox.setContentsMargins(10, 10, 10, 0)
 
@@ -55,6 +58,7 @@ class MainWindow(QMainWindow):
 
         self.dt_status = self.Status.NOT_OK
 
+        self.status_combo_box = QComboBox(self)
         self.create_status_bar()
 
         self.settings_window = SettingsWindow(parent_upd_slot=self.update_settings)
@@ -118,19 +122,10 @@ class MainWindow(QMainWindow):
         self.check_active_satellite()
         subs_and_clients.set_sat_graph_slot(self.antenna_graph_widget.update_graph)
         subs_and_clients.set_ant_pose_slot(self.antenna_pose_widget.update_pose)
+        subs_and_clients.set_status_slot(self.update_status_combo_box)
 
         self.login_widget = LoginWidget(subs_and_clients)
-        self.login_widget.show()
-
-    #     self.timer2 = QTimer()
-    #     self.timer2.timeout.connect(self.test)
-    #     self.timer2.start(3000)
-    #     self.flag = True
-    #
-    # def test(self):
-    #     if self.flag:
-    #         self.antenna_video_widget.update_thread()
-    #         self.flag = False
+        # self.login_widget.show()
 
     def update_timer(self):
         self.timer.start(int(self.settings.value("general_settings/map_update_period", 1000)))
@@ -390,22 +385,33 @@ class MainWindow(QMainWindow):
         # self.statusBar().showMessage("")
         status_lbl = QLabel("Status: ")
 
+        status_combo_box_list = [" All", " ESC 1", " ESC 2", " Encoder 1", " Encoder 2", " Az Lim", " El Lim",
+                                 " Lim Switch 1", " Lim Switch 2", " Lim Switch 3", " Lim Switch 4", " Data"]
+
         settings_btn = QPushButton("", self)
         settings_btn.setIcon(QIcon(os.path.dirname(os.path.abspath(__file__)) + "/resources/icons/settings.png"))
         settings_btn.setIconSize(QSize(20, 20))
         settings_btn.clicked.connect(self.show_settings_window)
 
-        status_btn = QPushButton("", self)
-        status_btn.setIcon(QIcon(os.path.dirname(os.path.abspath(__file__)) + "/resources/icons/status_ok.png"))
-        status_btn.setIconSize(QSize(20, 20))
+        for i in status_combo_box_list:
+            self.status_combo_box.addItem(self.icon_ok, i)
+
+        self.status_combo_box.adjustSize()
+        self.status_combo_box.setMaxVisibleItems(12)
 
         self.statusBar().setStyleSheet("QStatusBar {border: 0; background-color: #FFF8DC;}")
 
         self.statusBar().addWidget(settings_btn)
         self.statusBar().addPermanentWidget(VLine())
         self.statusBar().addPermanentWidget(status_lbl)
-        self.statusBar().addPermanentWidget(status_btn)
+        self.statusBar().addPermanentWidget(self.status_combo_box)
         self.statusBar().addPermanentWidget(VLine())
+
+    def update_status_combo_box(self, mask):
+        for idx in range(len(mask)):
+            status = mask[idx]
+            icon = self.icon_ok if status == '0' else self.icon_fail
+            self.status_combo_box.setItemIcon(idx, icon)
 
     def show_settings_window(self):
         self.settings_window.show()
