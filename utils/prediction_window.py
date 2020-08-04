@@ -2,10 +2,11 @@ import datetime
 
 import rclpy
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QMainWindow, QTableWidget, QTableWidgetItem, QMessageBox
+from PyQt5.QtWidgets import QMainWindow, QTableWidget, QTableWidgetItem, QLabel
 from antenna_interfaces.srv import SatsPredict
 
 
+# noinspection PyUnresolvedReferences
 class PredictionWindow(QMainWindow):
     def __init__(self, subs_and_clients, start_hours, length, horizon, parent=None):
         super().__init__(parent=parent)
@@ -18,7 +19,7 @@ class PredictionWindow(QMainWindow):
         req.horizon = horizon
         while not subs_and_clients.sat_predict_client.wait_for_service(timeout_sec=1.0):
             # TODO LOADING
-            print('Service sat_add_client is not available, waiting...')
+            print('Service sat_predict_client is not available, waiting...')
 
         future = subs_and_clients.sat_predict_client.call_async(req)
         while rclpy.ok():
@@ -27,9 +28,9 @@ class PredictionWindow(QMainWindow):
                 try:
                     response = future.result()
                 except Exception as e:
-                    QMessageBox.warning(self, "sat_predict_client", "Cannot make prediction for satellite.\n"
-                                                                    "Stacktrace: {}".format(e),
-                                        QMessageBox.Ok)
+                    table_widget = QLabel("Cannot make prediction for satellite\n"
+                                          "Stacktrace: {}".format(e), self)
+                    table_widget.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
                 else:
                     if response.r_stamps:
                         table_widget = QTableWidget(self)
@@ -40,21 +41,25 @@ class PredictionWindow(QMainWindow):
                         table_widget.horizontalHeaderItem(0).setToolTip("UTC time")
                         table_widget.horizontalHeaderItem(1).setToolTip("UTC time")
                         table_widget.horizontalHeaderItem(2).setToolTip("UTC time")
-                        # for r, f, me in zip(response.r_stamps, response.f_stamps, response.me_stamps):
                         for i in range(0, rows):
-                            table_widget.setItem(i, 0, QTableWidgetItem(
-                                datetime.datetime.fromtimestamp(response.r_stamps[i]).strftime("%d.%m.%Y %H:%M:%S")))
-                            table_widget.setItem(i, 1, QTableWidgetItem(
-                                datetime.datetime.fromtimestamp(response.f_stamps[i]).strftime("%d.%m.%Y %H:%M:%S")))
-                            table_widget.setItem(i, 2, QTableWidgetItem(
-                                datetime.datetime.fromtimestamp(response.me_stamps[i]).strftime("%d.%m.%Y %H:%M:%S")))
+                            r_item = QTableWidgetItem(
+                                datetime.datetime.fromtimestamp(response.r_stamps[i]).strftime("%d.%m.%Y %H:%M:%S"))
+                            r_item.setFlags(Qt.ItemIsEditable)
+                            table_widget.setItem(i, 0, r_item)
+                            f_item = QTableWidgetItem(
+                                datetime.datetime.fromtimestamp(response.f_stamps[i]).strftime("%d.%m.%Y %H:%M:%S"))
+                            f_item.setFlags(Qt.ItemIsEditable)
+                            table_widget.setItem(i, 1, f_item)
+                            me_item = QTableWidgetItem(
+                                datetime.datetime.fromtimestamp(response.me_stamps[i]).strftime("%d.%m.%Y %H:%M:%S"))
+                            me_item.setFlags(Qt.ItemIsEditable)
+                            table_widget.setItem(i, 2, me_item)
                         table_widget.resizeColumnsToContents()
-                        self.setCentralWidget(table_widget)
-                        self.resize(500, 200)
                     else:
-                        QMessageBox.warning(self, "sat_predict_client",
-                                            "Cannot make prediction for satellite.",
-                                            QMessageBox.Ok)
+                        table_widget = QLabel("Cannot make prediction for satellite", self)
+                        table_widget.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+                self.setCentralWidget(table_widget)
+                self.resize(500, 200)
                 break
 
     def centerize(self, prnt):

@@ -8,6 +8,7 @@ from antenna_interfaces.srv import *
 
 from utils.lines import *
 from utils.settings_window import SettingsWindow
+from utils.parameters_window import ParametersWindow
 from utils.subs_and_clients import SubscribersAndClients
 from utils.tle_handler import *
 from utils.widgets.antenna_adjustment_widget import AntennaAdjustmentWidget
@@ -63,8 +64,11 @@ class MainWindow(QMainWindow):
 
         self.prediction_window = PredictionInputWidget(subs_and_clients, parent=self)
 
+        # TODO REMOVE
         self.settings_window = SettingsWindow(parent_upd_slot=self.update_settings)
         self.settings = self.settings_window.settings
+
+        self.parameters_window = ParametersWindow(subs_and_clients, parent=self)
 
         self.map_widget = MapWidget(settings_window=self.settings_window)
         self.tle_list_widget = TleListWidget(subs_and_clients, parent_slot=self.update_map_widget,
@@ -83,16 +87,6 @@ class MainWindow(QMainWindow):
         get_tles(self.tle_list_widget, subs_and_clients)
 
         self.dt = None
-        # dt_result = self.antenna_time_widget.get_time_delta()
-        # if dt_result == AntennaTimeWidget.TimeResult.OK:
-        #     self.set_dt(self.antenna_time_widget.dt)
-        #     self.dt_status = self.Status.OK
-        # elif dt_result == AntennaTimeWidget.TimeResult.SERVERS_UNAVAILABLE:
-        #     QMessageBox.warning(self, "No time received", "NTP servers are unavailable", QMessageBox.Ok)
-        #     self.dt_status = self.Status.NOT_OK
-        # elif dt_result == AntennaTimeWidget.TimeResult.NO_CONNECTION:
-        #     QMessageBox.warning(self, "No time received", "Check your internet connection", QMessageBox.Ok)
-        #     self.dt_status = self.Status.NOT_OK
 
         splitter = QSplitter(Qt.Horizontal)
 
@@ -148,33 +142,6 @@ class MainWindow(QMainWindow):
             orb = get_orb_by_tle(tle)
             self.satellite_data_widget.update_data(orb)
 
-    # def add_to_tle_list_widget(self, sat_id=None, tle=None):
-    #     th = TleHandler()
-    #     if sat_id is not None:
-    #         if is_sat_id(sat_id):
-    #             result = th.save_by_sat_id(sat_id)
-    #         else:
-    #             QMessageBox.warning(self, "No TLE added", "Wrong satellite ID", QMessageBox.Ok)
-    #             return
-    #     elif tle is not None:
-    #         sat_id = tle[0].split(' ').pop(0)
-    #         if is_sat_id(sat_id):
-    #             result = th.save_by_tle(tle)
-    #         else:
-    #             QMessageBox.warning(self, "No TLE added", "Wrong satellite ID", QMessageBox.Ok)
-    #             return
-    #     else:
-    #         QMessageBox.warning(self, "No TLE added", "Something went wrong", QMessageBox.Ok)
-    #         return
-    #
-    #     if result == th.Result.IS_NONE:
-    #         QMessageBox.warning(self, "No TLE added", "Something went wrong", QMessageBox.Ok)
-    #     elif result == th.Result.ALREADY_EXISTS:
-    #         sat_name = get_name_by_sat_id(sat_id)
-    #         QMessageBox.information(self, "Find TLE by ID", "{} TLE already in list".format(sat_name), QMessageBox.Ok)
-    #     elif result == th.Result.SAVED:
-    #         self.tle_list_widget.update_list()
-
     def remove_from_tle_list_widget(self, index):
         remove_tle_by_index(index)
         self.tle_list_widget.update_list()
@@ -186,7 +153,6 @@ class MainWindow(QMainWindow):
         splitter.addWidget(self.antenna_pose_widget)
         splitter.addWidget(self.antenna_adjustment_widget)
         splitter.addWidget(self.antenna_control_widget)
-        # splitter.addWidget(self.antenna_time_widget)
         splitter.addWidget(self.antenna_video_widget)
         return splitter
 
@@ -313,8 +279,6 @@ class MainWindow(QMainWindow):
                         else:
                             QMessageBox.warning(self, "sat_add_client", "Cannot add satellite to list.", QMessageBox.Ok)
                     break
-            # noinspection PyTypeChecker
-            # ManualTleInputWidget(parent=self, parent_slot=self.add_to_tle_list_widget)
 
     def remove_btn_clicked(self):
         remove_box = QMessageBox(self)
@@ -376,11 +340,6 @@ class MainWindow(QMainWindow):
     def predict_btn_clicked(self):
         self.prediction_window.centerize(self)
         self.prediction_window.show()
-        # if self.tle_list_widget.selectedIndexes():
-        #     self.prediction_window.centerize(self)
-        #     self.prediction_window.show()
-        # else:
-        #     QMessageBox.information(self, "Prediction", "Select satellite first!", QMessageBox.Ok)
 
     def create_status_bar(self):
         # self.statusBar().showMessage("")
@@ -392,7 +351,7 @@ class MainWindow(QMainWindow):
         settings_btn = QPushButton("", self)
         settings_btn.setIcon(QIcon(os.path.dirname(os.path.abspath(__file__)) + "/resources/icons/settings.png"))
         settings_btn.setIconSize(QSize(20, 20))
-        settings_btn.clicked.connect(self.show_settings_window)
+        settings_btn.clicked.connect(self.show_parameters_window)
 
         for i in status_combo_box_list:
             self.status_combo_box.addItem(self.icon_ok, i)
@@ -417,8 +376,12 @@ class MainWindow(QMainWindow):
     def show_settings_window(self):
         self.settings_window.show()
 
+    def show_parameters_window(self):
+        self.parameters_window.centerize(self)
+        self.parameters_window.show()
+
     def set_active_btn_clicked(self):
-        if self.tle_list_widget.selectedIndexes():
+        if self.tle_list_widget.selectedIndexes() or (self.set_active_btn.text() == "Set inactive"):
             req = SatsActiveSet.Request()
             req.is_on = (self.set_active_btn.text() == "Set active")
 
@@ -467,28 +430,28 @@ class MainWindow(QMainWindow):
         self.antenna_video_widget.update_thread()
         self.map_widget.update_mcc_qpoint()
 
-    def closeEvent(self, event):
-        req = SysDeauth.Request()
-        while not subs_and_clients.sys_deauth_client.wait_for_service(timeout_sec=1.0):
-            # TODO LOADING
-            print('Service sys_deauth_client is not available, waiting...')
-
-        future = subs_and_clients.sys_deauth_client.call_async(req)
-        while rclpy.ok():
-            # TODO LOADING
-            if future.done():
-                try:
-                    response = future.result()
-                except Exception as e:
-                    QMessageBox.warning(self, "sys_deauth_client", "Cannot deauthorize.\n"
-                                                                   "Stacktrace: {}".format(e), QMessageBox.Ok)
-                else:
-                    if response.res:
-                        subs_and_clients.destroy_node()
-                        rclpy.shutdown()
-                    else:
-                        QMessageBox.warning(self, "sys_deauth_client", "Cannot deauthorize.", QMessageBox.Ok)
-                break
+    # def closeEvent(self, event):
+    #     req = SysDeauth.Request()
+    #     while not subs_and_clients.sys_deauth_client.wait_for_service(timeout_sec=1.0):
+    #         # TODO LOADING
+    #         print('Service sys_deauth_client is not available, waiting...')
+    #
+    #     future = subs_and_clients.sys_deauth_client.call_async(req)
+    #     while rclpy.ok():
+    #         # TODO LOADING
+    #         if future.done():
+    #             try:
+    #                 response = future.result()
+    #             except Exception as e:
+    #                 QMessageBox.warning(self, "sys_deauth_client", "Cannot deauthorize.\n"
+    #                                                                "Stacktrace: {}".format(e), QMessageBox.Ok)
+    #             else:
+    #                 if response.res:
+    #                     subs_and_clients.destroy_node()
+    #                     rclpy.shutdown()
+    #                 else:
+    #                     QMessageBox.warning(self, "sys_deauth_client", "Cannot deauthorize.", QMessageBox.Ok)
+    #             break
 
     def add_sat_to_list_by_name(self, sat_name):
         req = SatsAdd.Request()

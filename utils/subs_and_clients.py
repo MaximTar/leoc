@@ -47,6 +47,11 @@ class SubscribersAndClients(Node):
         self.sat_active_client = self.create_client(SatsActive, '/antenna/sats/active')
         self.sat_predict_client = self.create_client(SatsPredict, '/antenna/sats/predict')
 
+        # parameters
+        self.params_info_client = self.create_client(ParamsInfo, '/antenna/params/info')
+        self.params_client = self.create_client(Params, '/antenna/params')
+        self.params_set_client = self.create_client(ParamsSet, '/antenna/params/set')
+
     def _active_satellite_state_cb(self, msg):
         self.sat_lat = msg.lat
         self.sat_lon = msg.lon
