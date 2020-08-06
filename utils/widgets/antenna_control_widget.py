@@ -20,12 +20,12 @@ class AntennaControlWidget(QGroupBox):
 
         # second row
         self.azimuth_spinbox = QDoubleSpinBox(self)
-        self.azimuth_spinbox.setRange(-180, 180)
-        self.azimuth_spinbox.setSingleStep(0.1)
+        self.azimuth_spinbox.setRange(0, 359.99)
+        self.azimuth_spinbox.setSingleStep(0.01)
 
         self.elevation_spinbox = QDoubleSpinBox(self)
         self.elevation_spinbox.setRange(0, 90)
-        self.elevation_spinbox.setSingleStep(0.1)
+        self.elevation_spinbox.setSingleStep(0.01)
 
         set_btn = QPushButton("Set", self)
         set_btn.setToolTip("Set antenna position")
