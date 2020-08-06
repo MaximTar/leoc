@@ -1,6 +1,8 @@
+from PyQt5.QtCore import QTimer, QElapsedTimer
 from PyQt5.QtWidgets import QGridLayout, QGroupBox, QLabel
 
 
+# noinspection PyUnresolvedReferences
 class AntennaPoseWidget(QGroupBox):
     def __init__(self):
         super().__init__()
@@ -30,11 +32,19 @@ class AntennaPoseWidget(QGroupBox):
 
         self.setLayout(main_layout)
 
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.clear_labels)
+
     def update_pose(self, sat_pose=None, ant_pose=None):
-        # TODO CLEAR IF INACTIVE
         if sat_pose:
-            self.sat_az_label.setText(str(sat_pose[0]))
-            self.sat_el_label.setText(str(sat_pose[1]))
+            self.sat_az_label.setText("{:.2f}".format(sat_pose[0]))
+            self.sat_el_label.setText("{:.2f}".format(sat_pose[1]))
         if ant_pose:
-            self.ant_az_label.setText(str(ant_pose[0]))
-            self.ant_el_label.setText(str(ant_pose[1]))
+            self.ant_az_label.setText("{:.2f}".format(ant_pose[0]))
+            self.ant_el_label.setText("{:.2f}".format(ant_pose[1]))
+
+    def clear_labels(self):
+        self.sat_az_label.setText(str(""))
+        self.sat_el_label.setText(str(""))
+        self.ant_az_label.setText(str(""))
+        self.ant_el_label.setText(str(""))

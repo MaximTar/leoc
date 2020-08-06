@@ -76,8 +76,9 @@ class MainWindow(QMainWindow):
         self.satellite_data_widget = SatelliteDataWidget(settings=self.settings)
         self.antenna_graph_widget = AntennaGraphWidget()
         self.antenna_pose_widget = AntennaPoseWidget()
-        self.antenna_adjustment_widget = AntennaAdjustmentWidget(self.settings)
-        self.antenna_control_widget = AntennaControlWidget()
+        self.antenna_adjustment_widget = AntennaAdjustmentWidget(settings=self.settings,
+                                                                 subs_and_clients=subs_and_clients)
+        self.antenna_control_widget = AntennaControlWidget(subs_and_clients)
         self.antenna_time_widget = AntennaTimeWidget(dt_slot=self.set_dt)
         self.antenna_video_widget = AntennaVideoWidget(self.settings)
 
@@ -145,6 +146,8 @@ class MainWindow(QMainWindow):
     def remove_from_tle_list_widget(self, index):
         remove_tle_by_index(index)
         self.tle_list_widget.update_list()
+        get_tles(self.tle_list_widget, subs_and_clients)
+        self.check_active_satellite()
 
     def construct_left_widget(self):
         splitter = QSplitter(Qt.Vertical)
@@ -279,6 +282,8 @@ class MainWindow(QMainWindow):
                         else:
                             QMessageBox.warning(self, "sat_add_client", "Cannot add satellite to list.", QMessageBox.Ok)
                     break
+        get_tles(self.tle_list_widget, subs_and_clients)
+        self.check_active_satellite()
 
     def remove_btn_clicked(self):
         remove_box = QMessageBox(self)
@@ -311,6 +316,8 @@ class MainWindow(QMainWindow):
                         else:
                             if response.res:
                                 self.tle_list_widget.update_list()
+                                get_tles(self.tle_list_widget, subs_and_clients)
+                                self.check_active_satellite()
                             else:
                                 QMessageBox.warning(self, "sat_del_client", "Cannot delete satellite from list.",
                                                     QMessageBox.Ok)
@@ -416,6 +423,7 @@ class MainWindow(QMainWindow):
                                 self.set_active_btn.setText("Set active")
                                 self.rid.setBackground(self.background_color)
                                 self.antenna_graph_widget.is_tracking = False
+                                self.antenna_pose_widget.clear_labels()
                                 subs_and_clients.sat_azs, subs_and_clients.sat_els = [], []
                         else:
                             QMessageBox.warning(self, "sat_set_active_client", "Cannot set active satellite.",
@@ -430,28 +438,28 @@ class MainWindow(QMainWindow):
         self.antenna_video_widget.update_thread()
         self.map_widget.update_mcc_qpoint()
 
-    # def closeEvent(self, event):
-    #     req = SysDeauth.Request()
-    #     while not subs_and_clients.sys_deauth_client.wait_for_service(timeout_sec=1.0):
-    #         # TODO LOADING
-    #         print('Service sys_deauth_client is not available, waiting...')
-    #
-    #     future = subs_and_clients.sys_deauth_client.call_async(req)
-    #     while rclpy.ok():
-    #         # TODO LOADING
-    #         if future.done():
-    #             try:
-    #                 response = future.result()
-    #             except Exception as e:
-    #                 QMessageBox.warning(self, "sys_deauth_client", "Cannot deauthorize.\n"
-    #                                                                "Stacktrace: {}".format(e), QMessageBox.Ok)
-    #             else:
-    #                 if response.res:
-    #                     subs_and_clients.destroy_node()
-    #                     rclpy.shutdown()
-    #                 else:
-    #                     QMessageBox.warning(self, "sys_deauth_client", "Cannot deauthorize.", QMessageBox.Ok)
-    #             break
+    def closeEvent(self, event):
+        req = SysDeauth.Request()
+        while not subs_and_clients.sys_deauth_client.wait_for_service(timeout_sec=1.0):
+            # TODO LOADING
+            print('Service sys_deauth_client is not available, waiting...')
+
+        future = subs_and_clients.sys_deauth_client.call_async(req)
+        while rclpy.ok():
+            # TODO LOADING
+            if future.done():
+                try:
+                    response = future.result()
+                except Exception as e:
+                    QMessageBox.warning(self, "sys_deauth_client", "Cannot deauthorize.\n"
+                                                                   "Stacktrace: {}".format(e), QMessageBox.Ok)
+                else:
+                    if response.res:
+                        subs_and_clients.destroy_node()
+                        rclpy.shutdown()
+                    else:
+                        QMessageBox.warning(self, "sys_deauth_client", "Cannot deauthorize.", QMessageBox.Ok)
+                break
 
     def add_sat_to_list_by_name(self, sat_name):
         req = SatsAdd.Request()
@@ -473,6 +481,8 @@ class MainWindow(QMainWindow):
                 else:
                     if response.res:
                         self.tle_list_widget.update_list()
+                        get_tles(self.tle_list_widget, subs_and_clients)
+                        self.check_active_satellite()
                     else:
                         QMessageBox.warning(self, "sat_add_client",
                                             "Cannot add satellite {} to list.".format(req.name),

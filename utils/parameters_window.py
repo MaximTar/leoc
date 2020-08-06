@@ -1,7 +1,7 @@
 import rclpy
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QMainWindow, QLabel, QSpinBox, QTableWidget, QTableWidgetItem, QDoubleSpinBox, \
-    QPushButton, QWidget, QVBoxLayout
+    QPushButton, QWidget, QVBoxLayout, QMessageBox
 from antenna_interfaces.srv import Params, ParamsInfo, ParamsSet
 
 
@@ -98,8 +98,8 @@ class ParametersWindow(QMainWindow):
                     try:
                         response = future.result()
                     except Exception as e:
-                        QMessageBox.warning("params_client", "Cannot get parameters\n"
-                                                             "Stacktrace: {}".format(e), QMessageBox.Ok)
+                        QMessageBox.warning(self, "params_client", "Cannot get parameters\n"
+                                                                   "Stacktrace: {}".format(e), QMessageBox.Ok)
                     else:
                         if response.names:
                             n_rows = len(response.names)

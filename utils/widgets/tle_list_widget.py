@@ -74,6 +74,7 @@ class TleListWidget(QListWidget):
             req = SatsNames.Request()
             future = self.subs_and_clients.sat_names_client.call_async(req)
             while rclpy.ok():
+                # TODO LOADING?
                 if future.done():
                     try:
                         response = future.result()
