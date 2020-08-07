@@ -3,6 +3,8 @@ from PyQt5.QtCore import Qt, QPropertyAnimation, QEasingCurve
 from PyQt5.QtWidgets import QWidget, QPushButton, QLabel, QLineEdit, QGridLayout, QMessageBox, QDesktopWidget
 from antenna_interfaces.srv import SysAuth
 
+from utils.srv_client_handler import srv_ready
+
 
 # noinspection PyUnresolvedReferences
 class LoginWidget(QWidget):
@@ -12,10 +14,6 @@ class LoginWidget(QWidget):
 
         self.setWindowModality(Qt.ApplicationModal)
         self.setWindowFlags(Qt.CustomizeWindowHint)
-        # self.setWindowFlag(Qt.WindowTitleHint, True)
-        # self.setWindowFlag(Qt.WindowCloseButtonHint, False)
-        # self.setWindowFlag(Qt.WindowMinimizeButtonHint, False)
-        # self.setWindowFlag(Qt.WindowMaximizeButtonHint, False)
 
         self.resize(500, 120)
 
@@ -81,30 +79,27 @@ class LoginWidget(QWidget):
         self.animation.setKeyValueAt(0.666, self.right_lbl_geometry)
 
     def check_password(self):
-        req = SysAuth.Request()
-        req.login = str(self.line_edit_username.text())
-        req.password = str(self.line_edit_password.text())
-        while not self.subs_and_clients.sys_auth_client.wait_for_service(timeout_sec=1.0):
-            # TODO LOADING
-            print('Service sys_auth_client is not available, waiting...')
-
-        future = self.subs_and_clients.sys_auth_client.call_async(req)
-        while rclpy.ok():
-            # TODO LOADING
-            if future.done():
-                try:
-                    response = future.result()
-                except Exception as e:
-                    QMessageBox.warning(self, "sys_auth_client", "Cannot login.\n"
-                                                                 "Stacktrace: {}".format(e), QMessageBox.Ok)
-                else:
-                    if response.res:
-                        self.close()
-                        self.is_admin = response.is_admin
+        if srv_ready(self.subs_and_clients.sys_auth_client):
+            req = SysAuth.Request()
+            req.login = str(self.line_edit_username.text())
+            req.password = str(self.line_edit_password.text())
+            future = self.subs_and_clients.sys_auth_client.call_async(req)
+            while rclpy.ok():
+                # TODO LOADING
+                if future.done():
+                    try:
+                        response = future.result()
+                    except Exception as e:
+                        QMessageBox.warning(self, "sys_auth_client", "Cannot login.\n"
+                                                                     "Stacktrace: {}".format(e), QMessageBox.Ok)
                     else:
-                        self.line_edit_username.clear()
-                        self.line_edit_password.clear()
-                        self.wrong_lbl.setVisible(True)
-                        self.set_animation()
-                        self.animation.start()
-                break
+                        if response.res:
+                            self.close()
+                            self.is_admin = response.is_admin
+                        else:
+                            self.line_edit_username.clear()
+                            self.line_edit_password.clear()
+                            self.wrong_lbl.setVisible(True)
+                            self.set_animation()
+                            self.animation.start()
+                    break

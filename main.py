@@ -7,8 +7,8 @@ from PyQt5.QtWidgets import *
 from antenna_interfaces.srv import *
 
 from utils.lines import *
-from utils.settings_window import SettingsWindow
 from utils.parameters_window import ParametersWindow
+from utils.settings_window import SettingsWindow
 from utils.subs_and_clients import SubscribersAndClients
 from utils.tle_handler import *
 from utils.widgets.antenna_adjustment_widget import AntennaAdjustmentWidget
@@ -55,7 +55,7 @@ class MainWindow(QMainWindow):
         self.set_active_btn = QPushButton("Set active", self)
         self.set_active_btn.setToolTip("Set active satellite")
         self.set_active_btn.clicked.connect(self.set_active_btn_clicked)
-        self.set_active_btn.setEnabled(False)
+        # self.set_active_btn.setEnabled(True)
 
         self.dt_status = self.Status.NOT_OK
 
@@ -79,7 +79,7 @@ class MainWindow(QMainWindow):
         self.antenna_adjustment_widget = AntennaAdjustmentWidget(settings=self.settings,
                                                                  subs_and_clients=subs_and_clients)
         self.antenna_control_widget = AntennaControlWidget(subs_and_clients)
-        self.antenna_time_widget = AntennaTimeWidget(dt_slot=self.set_dt)
+        # self.antenna_time_widget = AntennaTimeWidget(dt_slot=self.set_dt)
         self.antenna_video_widget = AntennaVideoWidget(self.settings)
 
         self.map_widget.set_uncheck_list_and_slot(self.tle_list_widget.checked_indices_list,
@@ -126,11 +126,11 @@ class MainWindow(QMainWindow):
     def update_timer(self):
         self.timer.start(int(self.settings.value("general_settings/map_update_period", 1000)))
 
-    def set_dt(self, dt):
-        if dt:
-            self.dt = dt
-            self.dt_status = self.Status.OK
-            self.update_set_btn_state()
+    # def set_dt(self, dt):
+    #     if dt:
+    #         self.dt = dt
+    #         self.dt_status = self.Status.OK
+    #         self.update_set_btn_state()
 
     def update_map_widget(self):
         tle_list = get_tle_list_by_indices(self.tle_list_widget.checked_indices_list)
@@ -204,8 +204,8 @@ class MainWindow(QMainWindow):
         right_widget.setLayout(right_vbox)
         return right_widget
 
-    def update_set_btn_state(self):
-        self.set_active_btn.setEnabled(bool(self.dt_status.value))
+    # def update_set_btn_state(self):
+    #     self.set_active_btn.setEnabled(bool(self.dt_status.value))
 
     def add_btn_clicked(self):
         add_box = QMessageBox(self)
@@ -220,70 +220,84 @@ class MainWindow(QMainWindow):
         if add_box.clickedButton() == by_id_btn:
             sat_name, ok = QInputDialog.getInt(self, "Add TLE by satellite ID", "Satellite ID", min=0)
             if ok:
-                req = SatsAdd.Request()
-                req.num = str(sat_name)
-                while not subs_and_clients.sat_add_client.wait_for_service(timeout_sec=1.0):
-                    # TODO LOADING
-                    print('Service sat_add_client is not available, waiting...')
-
-                future = subs_and_clients.sat_add_client.call_async(req)
+                if srv_ready(subs_and_clients.sat_add_client):
+                    req = SatsAdd.Request()
+                    req.num = str(sat_name)
+                    future = subs_and_clients.sat_add_client.call_async(req)
+                    while rclpy.ok():
+                        # TODO LOADING
+                        if future.done():
+                            try:
+                                response = future.result()
+                            except Exception as e:
+                                QMessageBox.warning(self, "sat_add_client", "Cannot add satellite {} to list.\n"
+                                                                            "Stacktrace: {}".format(req.num, e),
+                                                    QMessageBox.Ok)
+                            else:
+                                if response.res:
+                                    self.tle_list_widget.update_list()
+                                else:
+                                    QMessageBox.warning(self, "sat_add_client",
+                                                        "Cannot add satellite {} to list.".format(req.num),
+                                                        QMessageBox.Ok)
+                            break
+        elif add_box.clickedButton() == by_name_btn:
+            sat_name, ok = QInputDialog.getText(self, "Add TLE by satellite name", "Satellite name")
+            if ok:
+                if srv_ready(subs_and_clients.sat_add_client):
+                    req = SatsAdd.Request()
+                    req.name = str(sat_name)
+                    future = subs_and_clients.sat_add_client.call_async(req)
+                    while rclpy.ok():
+                        # TODO LOADING
+                        if future.done():
+                            try:
+                                response = future.result()
+                            except Exception as e:
+                                QMessageBox.warning(self, "sat_add_client", "Cannot add satellite {} to list.\n"
+                                                                            "Stacktrace: {}".format(req.name, e),
+                                                    QMessageBox.Ok)
+                            else:
+                                if response.res:
+                                    self.tle_list_widget.update_list()
+                                else:
+                                    QMessageBox.warning(self, "sat_add_client",
+                                                        "Cannot add satellite {} to list.".format(req.name),
+                                                        QMessageBox.Ok)
+                            break
+        elif add_box.clickedButton() == manual_btn:
+            if srv_ready(subs_and_clients.usr_tle_set_client):
+                req = TlesUserSet.Request()
+                f_name = QFileDialog.getOpenFileName(self, 'Open file', "Text files (*.txt)")[0]
+                f = open(f_name, 'r')
+                with f:
+                    data = f.read()
+                f.close()
+                req.tles = data
+                future = subs_and_clients.usr_tle_set_client.call_async(req)
                 while rclpy.ok():
                     # TODO LOADING
                     if future.done():
                         try:
                             response = future.result()
                         except Exception as e:
-                            QMessageBox.warning(self, "sat_add_client", "Cannot add satellite {} to list.\n"
-                                                                        "Stacktrace: {}".format(req.num, e),
-                                                QMessageBox.Ok)
+                            QMessageBox.warning(self, "sat_add_client", "Cannot add satellite to list.\n"
+                                                                        "Stacktrace: {}".format(e), QMessageBox.Ok)
                         else:
                             if response.res:
-                                self.tle_list_widget.update_list()
+                                reply_btn = QMessageBox.question(self, "Done", "TLEs added to user database.\n"
+                                                                               "Do you want add it to the list?",
+                                                                 QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+                                if reply_btn == QMessageBox.Yes:
+                                    for fn in data.splitlines()[0::3]:
+                                        fn = fn.rstrip().split(' ')
+                                        self.add_sat_to_list_by_name(' '.join(fn))
                             else:
-                                QMessageBox.warning(self, "sat_add_client",
-                                                    "Cannot add satellite {} to list.".format(req.num),
+                                QMessageBox.warning(self, "sat_add_client", "Cannot add satellite to list.",
                                                     QMessageBox.Ok)
                         break
-        elif add_box.clickedButton() == by_name_btn:
-            sat_name, ok = QInputDialog.getText(self, "Add TLE by satellite name", "Satellite name")
-            if ok:
-                self.add_sat_to_list_by_name(sat_name)
-        elif add_box.clickedButton() == manual_btn:
-            req = TlesUserSet.Request()
-            f_name = QFileDialog.getOpenFileName(self, 'Open file', "Text files (*.txt)")[0]
-            f = open(f_name, 'r')
-            with f:
-                data = f.read()
-            f.close()
-            req.tles = data
-
-            while not subs_and_clients.usr_tle_set_client.wait_for_service(timeout_sec=1.0):
-                # TODO LOADING
-                print('Service sat_add_client is not available, waiting...')
-
-            future = subs_and_clients.usr_tle_set_client.call_async(req)
-            while rclpy.ok():
-                # TODO LOADING
-                if future.done():
-                    try:
-                        response = future.result()
-                    except Exception as e:
-                        QMessageBox.warning(self, "sat_add_client", "Cannot add satellite to list.\n"
-                                                                    "Stacktrace: {}".format(e), QMessageBox.Ok)
-                    else:
-                        if response.res:
-                            reply_btn = QMessageBox.question(self, "Done", "TLEs added to user database.\n"
-                                                                           "Do you want add it to the list?",
-                                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-                            if reply_btn == QMessageBox.Yes:
-                                for fn in data.splitlines()[0::3]:
-                                    fn = fn.rstrip().split(' ')
-                                    self.add_sat_to_list_by_name(' '.join(fn))
-                        else:
-                            QMessageBox.warning(self, "sat_add_client", "Cannot add satellite to list.", QMessageBox.Ok)
-                    break
-        get_tles(self.tle_list_widget, subs_and_clients)
-        self.check_active_satellite()
+            get_tles(self.tle_list_widget, subs_and_clients)
+            self.check_active_satellite()
 
     def remove_btn_clicked(self):
         remove_box = QMessageBox(self)
@@ -298,51 +312,51 @@ class MainWindow(QMainWindow):
             remove_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
             result = remove_box.exec()
             if result == QMessageBox.Yes:
-                req = SatsDel.Request()
-                req.id = int(selected_items[0].statusTip())
-                while not subs_and_clients.sat_del_client.wait_for_service(timeout_sec=1.0):
-                    # TODO LOADING
-                    print('Service sat_del_client is not available, waiting...')
-
-                future = subs_and_clients.sat_del_client.call_async(req)
-                while rclpy.ok():
-                    # TODO LOADING
-                    if future.done():
-                        try:
-                            response = future.result()
-                        except Exception as e:
-                            QMessageBox.warning(self, "sat_del_client", "Cannot delete satellite from list.\n"
-                                                                        "Stacktrace: {}".format(e), QMessageBox.Ok)
-                        else:
-                            if response.res:
-                                self.tle_list_widget.update_list()
-                                get_tles(self.tle_list_widget, subs_and_clients)
-                                self.check_active_satellite()
+                if srv_ready(subs_and_clients.sat_del_client):
+                    req = SatsDel.Request()
+                    req.id = int(selected_items[0].statusTip())
+                    future = subs_and_clients.sat_del_client.call_async(req)
+                    while rclpy.ok():
+                        # TODO LOADING
+                        if future.done():
+                            try:
+                                response = future.result()
+                            except Exception as e:
+                                QMessageBox.warning(self, "sat_del_client", "Cannot delete satellite from list.\n"
+                                                                            "Stacktrace: {}".format(e), QMessageBox.Ok)
                             else:
-                                QMessageBox.warning(self, "sat_del_client", "Cannot delete satellite from list.",
-                                                    QMessageBox.Ok)
-                        break
+                                if response.res:
+                                    self.tle_list_widget.update_list()
+                                    get_tles(self.tle_list_widget, subs_and_clients)
+                                    self.check_active_satellite()
+                                else:
+                                    QMessageBox.warning(self, "sat_del_client", "Cannot delete satellite from list.",
+                                                        QMessageBox.Ok)
+                            break
 
     def update_btn_clicked(self):
-        req = SatsUpdate.Request()
-        while not subs_and_clients.sat_upd_client.wait_for_service(timeout_sec=1.0):
-            # TODO LOADING
-            print('Service sat_upd_client is not available, waiting...')
-
-        future = subs_and_clients.sat_upd_client.call_async(req)
-        while rclpy.ok():
-            # TODO LOADING
-            if future.done():
-                try:
-                    response = future.result()
-                except Exception as e:
-                    QMessageBox.warning(self, "sat_upd_client", "Cannot update satellites list.\n"
-                                                                "Stacktrace: {}".format(e), QMessageBox.Ok)
-                else:
-                    # TODO if-else & MSG_BOX (get satellites by id and show names to user)
-                    subs_and_clients.get_logger().info(
-                        'Result: %s' % response)
-                break
+        if srv_ready(subs_and_clients.sat_upd_client):
+            req = SatsUpdate.Request()
+            future = subs_and_clients.sat_upd_client.call_async(req)
+            while rclpy.ok():
+                # TODO LOADING
+                if future.done():
+                    try:
+                        response = future.result()
+                    except Exception as e:
+                        QMessageBox.warning(self, "sat_upd_client", "Cannot update satellites list.\n"
+                                                                    "Stacktrace: {}".format(e), QMessageBox.Ok)
+                    else:
+                        if response.ids:
+                            print("HERE")
+                            upd_list = []
+                            for i in range(self.tle_list_widget.count()):
+                                if int(self.tle_list_widget.item(i).statusTip()) in response.ids:
+                                    upd_list.append(self.tle_list_widget.item(i).text())
+                            if upd_list:
+                                QMessageBox.information(self, "sat_upd_client",
+                                                        "Updated TLEs: .".format(', '.join(upd_list)), QMessageBox.Ok)
+                    break
 
     def predict_btn_clicked(self):
         self.prediction_window.centerize(self)
@@ -389,46 +403,43 @@ class MainWindow(QMainWindow):
 
     def set_active_btn_clicked(self):
         if self.tle_list_widget.selectedIndexes() or (self.set_active_btn.text() == "Set inactive"):
-            req = SatsActiveSet.Request()
-            req.is_on = (self.set_active_btn.text() == "Set active")
+            if srv_ready(subs_and_clients.sat_set_active_client):
+                req = SatsActiveSet.Request()
+                req.is_on = (self.set_active_btn.text() == "Set active")
 
-            if req.is_on:
-                self.rid = self.tle_list_widget.selectedItems()[0]
-                req.id = int(self.rid.statusTip())
+                if req.is_on:
+                    self.rid = self.tle_list_widget.selectedItems()[0]
+                    req.id = int(self.rid.statusTip())
 
-            if not self.background_color:
-                self.background_color = self.rid.background()
+                if not self.background_color:
+                    self.background_color = self.rid.background()
 
-            while not subs_and_clients.sat_set_active_client.wait_for_service(timeout_sec=1.0):
-                # TODO LOADING
-                print('Service sat_set_active_client is not available, waiting...')
-
-            future = subs_and_clients.sat_set_active_client.call_async(req)
-            while rclpy.ok():
-                # TODO LOADING
-                if future.done():
-                    try:
-                        response = future.result()
-                    except Exception as e:
-                        QMessageBox.warning(self, "sat_set_active_client", "Cannot set active satellite.\n"
-                                                                           "Stacktrace: {}".format(e),
-                                            QMessageBox.Ok)
-                    else:
-                        if response.res:
-                            if self.set_active_btn.text() == "Set active":
-                                self.set_active_btn.setText("Set inactive")
-                                self.rid.setBackground(QColor("#9ee99e"))
-                                self.antenna_graph_widget.is_tracking = True
-                            else:
-                                self.set_active_btn.setText("Set active")
-                                self.rid.setBackground(self.background_color)
-                                self.antenna_graph_widget.is_tracking = False
-                                self.antenna_pose_widget.clear_labels()
-                                subs_and_clients.sat_azs, subs_and_clients.sat_els = [], []
-                        else:
-                            QMessageBox.warning(self, "sat_set_active_client", "Cannot set active satellite.",
+                future = subs_and_clients.sat_set_active_client.call_async(req)
+                while rclpy.ok():
+                    # TODO LOADING
+                    if future.done():
+                        try:
+                            response = future.result()
+                        except Exception as e:
+                            QMessageBox.warning(self, "sat_set_active_client", "Cannot set active satellite.\n"
+                                                                               "Stacktrace: {}".format(e),
                                                 QMessageBox.Ok)
-                    break
+                        else:
+                            if response.res:
+                                if self.set_active_btn.text() == "Set active":
+                                    self.set_active_btn.setText("Set inactive")
+                                    self.rid.setBackground(QColor("#9ee99e"))
+                                    self.antenna_graph_widget.is_tracking = True
+                                else:
+                                    self.set_active_btn.setText("Set active")
+                                    self.rid.setBackground(self.background_color)
+                                    self.antenna_graph_widget.is_tracking = False
+                                    self.antenna_pose_widget.clear_labels()
+                                    subs_and_clients.sat_azs, subs_and_clients.sat_els = [], []
+                            else:
+                                QMessageBox.warning(self, "sat_set_active_client", "Cannot set active satellite.",
+                                                    QMessageBox.Ok)
+                        break
         else:
             QMessageBox.information(self, "Prediction", "Select satellite first!", QMessageBox.Ok)
 
@@ -439,82 +450,72 @@ class MainWindow(QMainWindow):
         self.map_widget.update_mcc_qpoint()
 
     def closeEvent(self, event):
-        req = SysDeauth.Request()
-        while not subs_and_clients.sys_deauth_client.wait_for_service(timeout_sec=1.0):
-            # TODO LOADING
-            print('Service sys_deauth_client is not available, waiting...')
-
-        future = subs_and_clients.sys_deauth_client.call_async(req)
-        while rclpy.ok():
-            # TODO LOADING
-            if future.done():
-                try:
-                    response = future.result()
-                except Exception as e:
-                    QMessageBox.warning(self, "sys_deauth_client", "Cannot deauthorize.\n"
-                                                                   "Stacktrace: {}".format(e), QMessageBox.Ok)
-                else:
-                    if response.res:
-                        subs_and_clients.destroy_node()
-                        rclpy.shutdown()
+        if srv_ready(subs_and_clients.sys_deauth_client):
+            req = SysDeauth.Request()
+            future = subs_and_clients.sys_deauth_client.call_async(req)
+            while rclpy.ok():
+                # TODO LOADING
+                if future.done():
+                    try:
+                        response = future.result()
+                    except Exception as e:
+                        QMessageBox.warning(self, "sys_deauth_client", "Cannot deauthorize.\n"
+                                                                       "Stacktrace: {}".format(e), QMessageBox.Ok)
                     else:
-                        QMessageBox.warning(self, "sys_deauth_client", "Cannot deauthorize.", QMessageBox.Ok)
-                break
+                        if response.res:
+                            subs_and_clients.destroy_node()
+                            rclpy.shutdown()
+                        else:
+                            QMessageBox.warning(self, "sys_deauth_client", "Cannot deauthorize.", QMessageBox.Ok)
+                    break
 
     def add_sat_to_list_by_name(self, sat_name):
-        req = SatsAdd.Request()
-        req.name = str(sat_name)
-        while not subs_and_clients.sat_add_client.wait_for_service(timeout_sec=1.0):
-            # TODO LOADING
-            print('Service sat_add_client is not available, waiting...')
-
-        future = subs_and_clients.sat_add_client.call_async(req)
-        while rclpy.ok():
-            # TODO LOADING
-            if future.done():
-                try:
-                    response = future.result()
-                except Exception as e:
-                    QMessageBox.warning(self, "sat_add_client", "Cannot add satellite {} to list.\n"
-                                                                "Stacktrace: {}".format(req.name, e),
-                                        QMessageBox.Ok)
-                else:
-                    if response.res:
-                        self.tle_list_widget.update_list()
-                        get_tles(self.tle_list_widget, subs_and_clients)
-                        self.check_active_satellite()
-                    else:
-                        QMessageBox.warning(self, "sat_add_client",
-                                            "Cannot add satellite {} to list.".format(req.name),
+        if srv_ready(subs_and_clients.sat_add_client):
+            req = SatsAdd.Request()
+            req.name = str(sat_name)
+            future = subs_and_clients.sat_add_client.call_async(req)
+            while rclpy.ok():
+                # TODO LOADING
+                if future.done():
+                    try:
+                        response = future.result()
+                    except Exception as e:
+                        QMessageBox.warning(self, "sat_add_client", "Cannot add satellite {} to list.\n"
+                                                                    "Stacktrace: {}".format(req.name, e),
                                             QMessageBox.Ok)
-                break
+                    else:
+                        if response.res:
+                            self.tle_list_widget.update_list()
+                            get_tles(self.tle_list_widget, subs_and_clients)
+                            self.check_active_satellite()
+                        else:
+                            QMessageBox.warning(self, "sat_add_client",
+                                                "Cannot add satellite {} to list.".format(req.name),
+                                                QMessageBox.Ok)
+                    break
 
     def check_active_satellite(self):
-        req = SatsActive.Request()
-
-        while not subs_and_clients.sat_active_client.wait_for_service(timeout_sec=1.0):
-            # TODO LOADING
-            print('Service sat_upd_client is not available, waiting...')
-
-        future = subs_and_clients.sat_active_client.call_async(req)
-        while rclpy.ok():
-            # TODO LOADING
-            if future.done():
-                try:
-                    response = future.result()
-                except Exception as e:
-                    QMessageBox.warning(self, "sat_upd_client", "Cannot check for active satellite.\n"
-                                                                "Stacktrace: {}".format(e), QMessageBox.Ok)
-                else:
-                    if response.is_on:
-                        for i in range(self.tle_list_widget.count()):
-                            if int(self.tle_list_widget.item(i).statusTip()) == response.id:
-                                self.rid = self.tle_list_widget.item(i)
-                                self.background_color = self.rid.background()
-                                self.tle_list_widget.item(i).setBackground(QColor("#9ee99e"))
-                                self.set_active_btn.setText("Set inactive")
-                                self.antenna_graph_widget.is_tracking = True
-                break
+        if srv_ready(subs_and_clients.sat_active_client):
+            req = SatsActive.Request()
+            future = subs_and_clients.sat_active_client.call_async(req)
+            while rclpy.ok():
+                # TODO LOADING
+                if future.done():
+                    try:
+                        response = future.result()
+                    except Exception as e:
+                        QMessageBox.warning(self, "sat_upd_client", "Cannot check for active satellite.\n"
+                                                                    "Stacktrace: {}".format(e), QMessageBox.Ok)
+                    else:
+                        if response.is_on:
+                            for i in range(self.tle_list_widget.count()):
+                                if int(self.tle_list_widget.item(i).statusTip()) == response.id:
+                                    self.rid = self.tle_list_widget.item(i)
+                                    self.background_color = self.rid.background()
+                                    self.tle_list_widget.item(i).setBackground(QColor("#9ee99e"))
+                                    self.set_active_btn.setText("Set inactive")
+                                    self.antenna_graph_widget.is_tracking = True
+                    break
 
 
 if __name__ == "__main__":

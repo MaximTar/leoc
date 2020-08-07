@@ -72,7 +72,6 @@ class SubscribersAndClients(Node):
         self.ant_az = msg.az
         self.ant_elv = msg.elv
         self.ant_azv = msg.azv
-        # TODO HANDLE ERROR
         self.ant_err_state = msg.err_state
 
         if self.ant_pose_slot:

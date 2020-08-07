@@ -82,16 +82,15 @@
 
 PubSub издатель - сервер
 
-- 1) Состояние, 10 Гц
+- 1) Состояние
 - биты ошибок, углы и угловые скорости антенны
 - State (uint16 error, float el, float az, float elv, float azv) /antenna/state
 
-- 2) Данные активного спутника 10Гц
-- координаты, углы для точки наблюдения (ожидаемые углы для антенны)
-- SatState (float lat, float lon, float alt, float el, float az) /antenna/sat/active
+- 2) Данные активного спутника
+- время расчета (timestamp), координаты, углы для точки наблюдения (ожидаемые углы для антенны)
+- SatState (float ts, float lat, float lon, float alt, float el, float az) /antenna/sat/state
 
 * 3) События, которые пишутся в лог файл сервера (режим администратора)
 * string /antenna/system/log
 
-
-sudo time_synchronization_with_server
+# TODO sudo time_synchronization_with_server

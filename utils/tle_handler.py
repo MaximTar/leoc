@@ -1,10 +1,12 @@
 import os
+import sys
 from enum import Enum
 
 # Work with indices and satellite identifiers is preferable, since names can be duplicated
 import deprecation
 import rclpy
 import spacetrack.operators as op
+from PyQt5.QtWidgets import QMessageBox, QPushButton
 from antenna_interfaces.srv import SatsTles
 from pyorbital.orbital import Orbital
 from requests import get
@@ -289,33 +291,66 @@ def is_tle(tle):
         return False
 
 
-def get_tles(tle_list_widget, subs_and_clients):
-    ids = []
-    for i in range(tle_list_widget.count()):
-        ids.append(int(tle_list_widget.item(i).statusTip()))
-    # noinspection PyUnresolvedReferences
-    req = SatsTles.Request()
-    req.ids = ids
-    while not subs_and_clients.sat_tles_client.wait_for_service(timeout_sec=1.0):
-        # TODO LOADING
-        print('Service sat_del_client is not available, waiting...')
+def srv_ready(client, on_startup=False):
+    if not client.wait_for_service(timeout_sec=1.0):
+        if on_startup:
+            msg_box = QMessageBox()
+            msg_box.setIcon(QMessageBox.Critical)
+            msg_box.setText("Cannot get TLE list on startup.")
+            msg_box.setWindowTitle("sat_tles_client")
+            ta_btn = QPushButton("Try again")
+            ca_btn = QPushButton("Close app")
+            msg_box.addButton(ta_btn, QMessageBox.ActionRole)
+            msg_box.addButton(ca_btn, QMessageBox.ActionRole)
+            msg_box.exec()
+            if msg_box.clickedButton() == ta_btn:
+                srv_ready(client, on_startup)
+            elif msg_box.clickedButton() == ca_btn:
+                # TODO CHECK IF WORKS
+                sys.exit()
+        else:
+            msg_box = QMessageBox()
+            msg_box.setIcon(QMessageBox.Critical)
+            msg_box.setText("Cannot get TLE list, sat_tles_client is not responding.")
+            msg_box.setWindowTitle("sat_tles_client")
+            ta_btn = QPushButton("Try again")
+            ca_btn = QPushButton("Cancel")
+            msg_box.addButton(ta_btn, QMessageBox.ActionRole)
+            msg_box.addButton(ca_btn, QMessageBox.ActionRole)
+            msg_box.exec()
+            if msg_box.clickedButton() == ta_btn:
+                srv_ready(client, on_startup)
+            elif msg_box.clickedButton() == ca_btn:
+                return False
+    else:
+        return True
 
-    future = subs_and_clients.sat_tles_client.call_async(req)
-    while rclpy.ok():
-        # TODO LOADING
-        if future.done():
-            try:
-                response = future.result()
-            except Exception as e:
-                # TODO MSG_BOX
-                subs_and_clients.get_logger().info(
-                    'Service call failed %r' % (e,))
-            else:
-                # TODO MSG_BOX
-                subs_and_clients.get_logger().info(
-                    'Result: %s' % response.tles)
-                save_tles(response.tles)
-            break
+
+def get_tles(tle_list_widget, subs_and_clients, on_startup=False):
+    if srv_ready(subs_and_clients.sat_tles_client, on_startup):
+        ids = []
+        for i in range(tle_list_widget.count()):
+            ids.append(int(tle_list_widget.item(i).statusTip()))
+        # noinspection PyUnresolvedReferences
+        req = SatsTles.Request()
+        req.ids = ids
+        future = subs_and_clients.sat_tles_client.call_async(req)
+        while rclpy.ok():
+            # TODO LOADING
+            if future.done():
+                try:
+                    response = future.result()
+                except Exception as e:
+                    QMessageBox.warning(tle_list_widget.parent(), "sat_tles_client", "Cannot get TLEs list.\n"
+                                                                                     "Stacktrace: {}".format(e),
+                                        QMessageBox.Ok)
+                else:
+                    if req.ids and not response.tles:
+                        QMessageBox.warning(tle_list_widget.parent(), "sat_tles_client", "Cannot get TLEs list.",
+                                            QMessageBox.Ok)
+                    else:
+                        save_tles(response.tles)
+                break
 
 
 class TleHandler:
