@@ -35,7 +35,7 @@ from utils.widgets.tle_list_widget import TleListWidget
 # sys.stderr = DevNull()  # Suppressing the error messages
 
 # TODO AFTER-AFTER Time simulation mode
-# noinspection PyUnresolvedReferences,PyCallByClass,PyArgumentList
+# noinspection PyUnresolvedReferences,PyCallByClass,PyArgumentList,PyTypeChecker
 class MainWindow(QMainWindow):
     class Status(Enum):
         OK = 1
@@ -48,6 +48,7 @@ class MainWindow(QMainWindow):
 
         self.icon_ok = QIcon(os.path.dirname(os.path.abspath(__file__)) + "/resources/icons/status_ok.png")
         self.icon_fail = QIcon(os.path.dirname(os.path.abspath(__file__)) + "/resources/icons/status_fail.png")
+        self.background_color = QColor("#fcfcfc")
 
         main_hbox = QHBoxLayout()
         main_hbox.setContentsMargins(10, 10, 10, 0)
@@ -71,9 +72,9 @@ class MainWindow(QMainWindow):
         self.parameters_window = ParametersWindow(subs_and_clients, parent=self)
 
         self.map_widget = MapWidget(settings_window=self.settings_window)
-        self.tle_list_widget = TleListWidget(subs_and_clients, parent_slot=self.update_map_widget,
-                                             data_slot=self.update_sat_data)
-        self.satellite_data_widget = SatelliteDataWidget(settings=self.settings)
+        self.tle_list_widget = TleListWidget(subs_and_clients, parent_slot=self.update_map_widget)
+        # data_slot=self.update_sat_data)
+        # self.satellite_data_widget = SatelliteDataWidget(settings=self.settings)
         self.antenna_graph_widget = AntennaGraphWidget()
         self.antenna_pose_widget = AntennaPoseWidget()
         self.antenna_adjustment_widget = AntennaAdjustmentWidget(settings=self.settings,
@@ -110,18 +111,18 @@ class MainWindow(QMainWindow):
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_map_widget)
-        self.timer.timeout.connect(self.update_sat_data)
+        # self.timer.timeout.connect(self.update_sat_data)
         self.timer.start(int(self.settings.value("general_settings/map_update_period", 1000)))
 
-        self.background_color = None
         self.rid = None
         self.check_active_satellite()
-        subs_and_clients.set_sat_graph_slot(self.antenna_graph_widget.update_graph)
+        subs_and_clients.set_sat_graph_slot(self.antenna_graph_widget.update_sat_graph)
+        subs_and_clients.set_ant_graph_slot(self.antenna_graph_widget.update_ant_graph)
         subs_and_clients.set_ant_pose_slot(self.antenna_pose_widget.update_pose)
         subs_and_clients.set_status_slot(self.update_status_combo_box)
 
         self.login_widget = LoginWidget(subs_and_clients)
-        # self.login_widget.show()
+        self.login_widget.show()
 
     def update_timer(self):
         self.timer.start(int(self.settings.value("general_settings/map_update_period", 1000)))
@@ -137,11 +138,11 @@ class MainWindow(QMainWindow):
         orb_list = get_orb_list_by_tle_list(tle_list)
         self.map_widget.update_map(orb_list)
 
-    def update_sat_data(self):
-        if self.tle_list_widget.selectedIndexes():
-            tle = get_tle_by_index(self.tle_list_widget.selectedIndexes()[0].row())
-            orb = get_orb_by_tle(tle)
-            self.satellite_data_widget.update_data(orb)
+    # def update_sat_data(self):
+    #     if self.tle_list_widget.selectedIndexes():
+    #         tle = get_tle_by_index(self.tle_list_widget.selectedIndexes()[0].row())
+    #         orb = get_orb_by_tle(tle)
+    #         # self.satellite_data_widget.update_data(orb)
 
     def remove_from_tle_list_widget(self, index):
         remove_tle_by_index(index)
@@ -192,9 +193,9 @@ class MainWindow(QMainWindow):
 
         splitter = QSplitter(Qt.Vertical)
         splitter.addWidget(self.tle_list_widget)
-        scroll_area = QScrollArea()
-        scroll_area.setWidget(self.satellite_data_widget)
-        splitter.addWidget(scroll_area)
+        # scroll_area = QScrollArea()
+        # scroll_area.setWidget(self.satellite_data_widget)
+        # splitter.addWidget(scroll_area)
 
         splitter.setStretchFactor(0, 9)
         splitter.setStretchFactor(1, 1)
@@ -348,7 +349,6 @@ class MainWindow(QMainWindow):
                                                                     "Stacktrace: {}".format(e), QMessageBox.Ok)
                     else:
                         if response.ids:
-                            print("HERE")
                             upd_list = []
                             for i in range(self.tle_list_widget.count()):
                                 if int(self.tle_list_widget.item(i).statusTip()) in response.ids:
@@ -411,9 +411,6 @@ class MainWindow(QMainWindow):
                     self.rid = self.tle_list_widget.selectedItems()[0]
                     req.id = int(self.rid.statusTip())
 
-                if not self.background_color:
-                    self.background_color = self.rid.background()
-
                 future = subs_and_clients.sat_set_active_client.call_async(req)
                 while rclpy.ok():
                     # TODO LOADING
@@ -434,6 +431,7 @@ class MainWindow(QMainWindow):
                                     self.set_active_btn.setText("Set active")
                                     self.rid.setBackground(self.background_color)
                                     self.antenna_graph_widget.is_tracking = False
+                                    # self.antenna_graph_widget.clear_sat_data()
                                     self.antenna_pose_widget.clear_labels()
                                     subs_and_clients.sat_azs, subs_and_clients.sat_els = [], []
                             else:
@@ -511,7 +509,6 @@ class MainWindow(QMainWindow):
                             for i in range(self.tle_list_widget.count()):
                                 if int(self.tle_list_widget.item(i).statusTip()) == response.id:
                                     self.rid = self.tle_list_widget.item(i)
-                                    self.background_color = self.rid.background()
                                     self.tle_list_widget.item(i).setBackground(QColor("#9ee99e"))
                                     self.set_active_btn.setText("Set inactive")
                                     self.antenna_graph_widget.is_tracking = True

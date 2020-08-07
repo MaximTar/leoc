@@ -9,8 +9,10 @@ class SubscribersAndClients(Node):
         super().__init__('subs_and_clients')
 
         self.sat_graph_slot = None
-        self.ant_pose_slot = None
+        self.ant_graph_slot = None
+        self.sat_ant_pose_slot = None
         self.sat_azs, self.sat_els = [], []
+        self.ant_azs, self.ant_els = [], []
 
         self.status_slot = None
 
@@ -64,8 +66,8 @@ class SubscribersAndClients(Node):
         if self.sat_graph_slot:
             self.sat_graph_slot(self.sat_azs, self.sat_els)
 
-        if self.ant_pose_slot:
-            self.ant_pose_slot(sat_pose=(self.sat_az, self.sat_el))
+        if self.sat_ant_pose_slot:
+            self.sat_ant_pose_slot(sat_pose=(self.sat_az, self.sat_el))
 
     def _antenna_state_cb(self, msg):
         self.ant_el = msg.el
@@ -74,14 +76,22 @@ class SubscribersAndClients(Node):
         self.ant_azv = msg.azv
         self.ant_err_state = msg.err_state
 
-        if self.ant_pose_slot:
-            self.ant_pose_slot(ant_pose=(self.ant_az, self.ant_el))
+        self.ant_azs.append(self.ant_az)
+        self.ant_els.append(self.ant_el)
+        if self.ant_graph_slot:
+            self.ant_graph_slot(self.ant_azs[1:], self.ant_els[1:])
+
+        if self.sat_ant_pose_slot:
+            self.sat_ant_pose_slot(ant_pose=(self.ant_az, self.ant_el))
 
     def set_sat_graph_slot(self, sat_graph_slot):
         self.sat_graph_slot = sat_graph_slot
 
+    def set_ant_graph_slot(self, ant_graph_slot):
+        self.ant_graph_slot = ant_graph_slot
+
     def set_ant_pose_slot(self, ant_pose_slot):
-        self.ant_pose_slot = ant_pose_slot
+        self.sat_ant_pose_slot = ant_pose_slot
 
     def set_status_slot(self, status_slot):
         self.status_slot = status_slot

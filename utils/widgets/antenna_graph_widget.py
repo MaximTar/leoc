@@ -22,13 +22,13 @@ class AntennaGraphWidget(QWidget):
         self.plot.getAxis('left').setTicks([self.d_ax, []])
 
         self.plot.addLine(x=0, pen=pg.mkPen(0.2, style=QtCore.Qt.DotLine),
-                          label='180', labelOpts={'position': 0.97, 'color': 'k'})
-        self.plot.addLine(x=0, pen=pg.mkPen(0.2, style=QtCore.Qt.DotLine),
-                          label='0', labelOpts={'position': 0.03, 'color': 'k'})
-        self.plot.addLine(y=0, pen=pg.mkPen(0.2, style=QtCore.Qt.DotLine),
                           label='90', labelOpts={'position': 0.97, 'color': 'k'})
+        self.plot.addLine(x=0, pen=pg.mkPen(0.2, style=QtCore.Qt.DotLine),
+                          label='270', labelOpts={'position': 0.035, 'color': 'k'})
         self.plot.addLine(y=0, pen=pg.mkPen(0.2, style=QtCore.Qt.DotLine),
-                          label='270', labelOpts={'position': 0.04, 'color': 'k'})
+                          label='0', labelOpts={'position': 0.97, 'color': 'k'})
+        self.plot.addLine(y=0, pen=pg.mkPen(0.2, style=QtCore.Qt.DotLine),
+                          label='180', labelOpts={'position': 0.048, 'color': 'k'})
 
         for r in self.el_r:
             # noinspection PyUnresolvedReferences
@@ -36,7 +36,8 @@ class AntennaGraphWidget(QWidget):
             circle.setPen(pg.mkPen(0.2, style=QtCore.Qt.DotLine))
             self.plot.addItem(circle)
 
-        self.data = self.plot.plot(pen=pg.mkPen(color='r', width=2))
+        self.sat_data = self.plot.plot(pen=pg.mkPen(color='r', width=2))
+        self.ant_data = self.plot.plot(pen=pg.mkPen(color='g', width=2))
 
         vbox_layout = QVBoxLayout()
         vbox_layout.addWidget(self.plot)
@@ -44,9 +45,17 @@ class AntennaGraphWidget(QWidget):
 
         self.is_tracking = None
 
-    def update_graph(self, azimuth, elevation):
-        # azimuth and elevation should be in radians
+    def update_sat_graph(self, azimuth, elevation):
         if self.is_tracking:
             x = elevation * np.cos(np.deg2rad(azimuth))
             y = elevation * np.sin(np.deg2rad(azimuth))
-            self.data.setData(x, y)
+            self.sat_data.setData(x, y)
+
+    def update_ant_graph(self, azimuth, elevation):
+        # if self.is_tracking:
+        x = elevation * np.cos(np.deg2rad(azimuth))
+        y = elevation * np.sin(np.deg2rad(azimuth))
+        self.ant_data.setData(x, y)
+
+    def clear_sat_data(self):
+        self.sat_data = self.plot.plot(pen=pg.mkPen(color='r', width=2))
