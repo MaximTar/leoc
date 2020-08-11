@@ -61,8 +61,12 @@ class SubscribersAndClients(Node):
         self.sat_el = msg.el
         self.sat_az = msg.az
 
-        self.sat_azs.append(self.sat_az)
-        self.sat_els.append(self.sat_el)
+        if self.sat_el < 0:
+            self.sat_azs, self.sat_els = [], []
+        else:
+            self.sat_azs.append(self.sat_az)
+            self.sat_els.append(self.sat_el)
+
         if self.sat_graph_slot:
             self.sat_graph_slot(self.sat_azs, self.sat_els)
 
@@ -76,8 +80,12 @@ class SubscribersAndClients(Node):
         self.ant_azv = msg.azv
         self.ant_err_state = msg.err_state
 
-        self.ant_azs.append(self.ant_az)
-        self.ant_els.append(self.ant_el)
+        if self.ant_el < 0:
+            self.ant_azs, self.ant_els = [], []
+        else:
+            self.ant_azs.append(self.ant_az)
+            self.ant_els.append(self.ant_el)
+
         if self.ant_graph_slot:
             self.ant_graph_slot(self.ant_azs[1:], self.ant_els[1:])
 
