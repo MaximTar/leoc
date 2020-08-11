@@ -24,6 +24,10 @@ from utils.widgets.satellite_data_widget import SatelliteDataWidget
 from utils.widgets.tle_list_widget import TleListWidget
 
 
+# TODO 0.1 TIME
+# TODO 6 SHOW USERDB
+# TODO 7 CHECK SERVER
+# TODO LOADING
 # import sys  # Suppressing the error messages
 #
 #
@@ -122,7 +126,7 @@ class MainWindow(QMainWindow):
         subs_and_clients.set_status_slot(self.update_status_combo_box)
 
         self.login_widget = LoginWidget(subs_and_clients)
-        self.login_widget.show()
+        # self.login_widget.show()
 
     def update_timer(self):
         self.timer.start(int(self.settings.value("general_settings/map_update_period", 1000)))
@@ -167,16 +171,16 @@ class MainWindow(QMainWindow):
         btn_widget = QWidget()
         btn_grid = QGridLayout()
 
-        add_btn = QPushButton("+", self)
+        add_btn = QPushButton("Add", self)
         add_btn.setToolTip("Add TLE to the list")
         add_btn.clicked.connect(self.add_btn_clicked)
 
-        remove_btn = QPushButton("-", self)
+        remove_btn = QPushButton("Del", self)
         remove_btn.setToolTip("Remove TLE from the list")
         remove_btn.clicked.connect(self.remove_btn_clicked)
 
         update_btn = QPushButton("Update", self)
-        update_btn.setToolTip("Update")
+        update_btn.setToolTip("Update TLE list")
         update_btn.clicked.connect(self.update_btn_clicked)
 
         predict_btn = QPushButton("Predict", self)
