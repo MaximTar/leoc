@@ -76,9 +76,9 @@ class MainWindow(QMainWindow):
         self.parameters_window = ParametersWindow(subs_and_clients, parent=self)
 
         self.map_widget = MapWidget(settings_window=self.settings_window)
-        self.tle_list_widget = TleListWidget(subs_and_clients, parent_slot=self.update_map_widget)
-        # data_slot=self.update_sat_data)
-        # self.satellite_data_widget = SatelliteDataWidget(settings=self.settings)
+        self.tle_list_widget = TleListWidget(subs_and_clients, parent_slot=self.update_map_widget,
+                                             data_slot=self.update_sat_data)
+        self.satellite_data_widget = SatelliteDataWidget(settings=self.settings)
         self.antenna_graph_widget = AntennaGraphWidget()
         self.antenna_pose_widget = AntennaPoseWidget()
         self.antenna_adjustment_widget = AntennaAdjustmentWidget(settings=self.settings,
@@ -115,7 +115,7 @@ class MainWindow(QMainWindow):
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_map_widget)
-        # self.timer.timeout.connect(self.update_sat_data)
+        self.timer.timeout.connect(self.update_sat_data)
         self.timer.start(int(self.settings.value("general_settings/map_update_period", 1000)))
 
         self.rid = None
@@ -142,11 +142,11 @@ class MainWindow(QMainWindow):
         orb_list = get_orb_list_by_tle_list(tle_list)
         self.map_widget.update_map(orb_list)
 
-    # def update_sat_data(self):
-    #     if self.tle_list_widget.selectedIndexes():
-    #         tle = get_tle_by_index(self.tle_list_widget.selectedIndexes()[0].row())
-    #         orb = get_orb_by_tle(tle)
-    #         # self.satellite_data_widget.update_data(orb)
+    def update_sat_data(self):
+        if self.tle_list_widget.selectedIndexes():
+            tle = get_tle_by_index(self.tle_list_widget.selectedIndexes()[0].row())
+            orb = get_orb_by_tle(tle)
+            self.satellite_data_widget.update_data(orb)
 
     def remove_from_tle_list_widget(self, index):
         remove_tle_by_index(index)
@@ -197,9 +197,9 @@ class MainWindow(QMainWindow):
 
         splitter = QSplitter(Qt.Vertical)
         splitter.addWidget(self.tle_list_widget)
-        # scroll_area = QScrollArea()
-        # scroll_area.setWidget(self.satellite_data_widget)
-        # splitter.addWidget(scroll_area)
+        scroll_area = QScrollArea()
+        scroll_area.setWidget(self.satellite_data_widget)
+        splitter.addWidget(scroll_area)
 
         splitter.setStretchFactor(0, 9)
         splitter.setStretchFactor(1, 1)
