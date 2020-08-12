@@ -20,13 +20,13 @@ from utils.widgets.antenna_video_widget import AntennaVideoWidget
 from utils.widgets.login_widget import LoginWidget
 from utils.widgets.map_widget import MapWidget
 from utils.widgets.prediction_input_widget import PredictionInputWidget
+from utils.prediction_window_old import PredictionWindow
 from utils.widgets.satellite_data_widget import SatelliteDataWidget
 from utils.widgets.tle_list_widget import TleListWidget
 
 
-# TODO 0.1 TIME
+# TODO 0.1 TIME + CHECK SERVER
 # TODO 6 SHOW USERDB
-# TODO 7 CHECK SERVER
 # TODO LOADING
 # import sys  # Suppressing the error messages
 #
@@ -124,6 +124,8 @@ class MainWindow(QMainWindow):
         subs_and_clients.set_ant_graph_slot(self.antenna_graph_widget.update_ant_graph)
         subs_and_clients.set_ant_pose_slot(self.antenna_pose_widget.update_pose)
         subs_and_clients.set_status_slot(self.update_status_combo_box)
+
+        # self.prediction_window = PredictionWindow()
 
         self.login_widget = LoginWidget(subs_and_clients)
         # self.login_widget.show()
@@ -363,8 +365,12 @@ class MainWindow(QMainWindow):
                     break
 
     def predict_btn_clicked(self):
-        self.prediction_window.centerize(self)
-        self.prediction_window.show()
+        if self.tle_list_widget.selectedIndexes():
+            self.prediction_window.centerize(self)
+            self.prediction_window.show()
+            # self.prediction_window.set_idx(self.tle_list_widget.selectedIndexes()[0].row())
+        else:
+            QMessageBox.information(self, "Prediction", "Select satellite first!", QMessageBox.Ok)
 
     def create_status_bar(self):
         # self.statusBar().showMessage("")

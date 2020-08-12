@@ -1,7 +1,9 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QGridLayout, QWidget, QLabel, QSpinBox, QDoubleSpinBox, QMainWindow, QPushButton
 
-from utils.prediction_window import PredictionWindow
+# from utils.prediction_window import PredictionWindow
+from utils.prediction_window_old import PredictionWindow
+from utils.tle_handler import *
 
 
 # noinspection PyUnresolvedReferences
@@ -38,14 +40,35 @@ class PredictionInputWidget(QMainWindow):
         central_widget.setLayout(layout)
         self.setCentralWidget(central_widget)
 
+        self.idx = 0
+
+        # if it will be local variable - it'll destroyed at the end of the function
+        self.prediction_window = None
+
     def centerize(self, prnt):
         if prnt:
             self.move(prnt.window().frameGeometry().topLeft() + prnt.window().rect().center() - self.rect().center())
 
     def predict_btn_clicked(self):
-        prediction_window = PredictionWindow(self.subs_and_clients, self.start_spinbox.value(),
-                                             self.length_spinbox.value(), self.horizon_spinbox.value(),
-                                             parent=self.parent)
-        self.close()
-        prediction_window.centerize(self.parent)
-        prediction_window.show()
+        # prediction_window = PredictionWindow(self.subs_and_clients, self.start_spinbox.value(),
+        #                                      self.length_spinbox.value(), self.horizon_spinbox.value(),
+        #                                      parent=self.parent)
+        # self.close()
+        # prediction_window.centerize(self.parent)
+        # prediction_window.show()
+
+        if self.idx is not None:
+            tle = get_tle_by_index(self.idx)
+            orb = get_orb_by_tle(tle)
+            self.close()
+            self.prediction_window = PredictionWindow(
+                input_arr=[self.start_spinbox.value(), self.length_spinbox.value(), self.horizon_spinbox.value()],
+                orb=orb)
+            self.prediction_window.centerize(self.parent)
+            self.prediction_window.show()
+        else:
+            self.close()
+            QMessageBox.warning(self, "Warning", "Set index with set_idx first!", QMessageBox.Ok)
+
+    def set_idx(self, idx):
+        self.idx = idx
