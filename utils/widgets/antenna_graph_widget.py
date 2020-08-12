@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout
 from pyqtgraph.Qt import QtCore
 
 
-# TODO 1 ORBITRON
+# TODO AFTER FULL SCREEN GRAPH
 # TODO AFTER SHOW MANY SATELLITES
 class AntennaGraphWidget(QWidget):
     def __init__(self):
@@ -17,25 +17,19 @@ class AntennaGraphWidget(QWidget):
         self.plot = pg.PlotWidget()
 
         el_r = list(range(0, 100, 10))
-        # ax_r = list(range(0, 100, 30))
-        # ax_r.reverse()
-        # d_ax = [(r, str(r)) for r in ax_r]
 
-        # self.plot.getAxis('bottom').setTicks([d_ax, []])
-        # self.plot.getAxis('left').setTicks([d_ax, []])
         self.plot.getPlotItem().hideAxis('bottom')
         self.plot.getPlotItem().hideAxis('left')
 
         # 0 N / 90 E / 180 S / 270 W
-
         self.plot.addLine(x=0, pen=pg.mkPen(0.2, style=QtCore.Qt.DotLine),
-                          label='90', labelOpts={'position': 0.97, 'color': 'k'})
+                          label='N', labelOpts={'position': 0.97, 'color': 'k'})
         self.plot.addLine(x=0, pen=pg.mkPen(0.2, style=QtCore.Qt.DotLine),
-                          label='270', labelOpts={'position': 0.035, 'color': 'k'})
+                          label='S', labelOpts={'position': 0.03, 'color': 'k'})
         self.plot.addLine(y=0, pen=pg.mkPen(0.2, style=QtCore.Qt.DotLine),
-                          label='0', labelOpts={'position': 0.97, 'color': 'k'})
+                          label='E', labelOpts={'position': 0.97, 'color': 'k'})
         self.plot.addLine(y=0, pen=pg.mkPen(0.2, style=QtCore.Qt.DotLine),
-                          label='180', labelOpts={'position': 0.048, 'color': 'k'})
+                          label='W', labelOpts={'position': 0.03, 'color': 'k'})
 
         for r in el_r:
             # noinspection PyUnresolvedReferences
@@ -55,19 +49,20 @@ class AntennaGraphWidget(QWidget):
         self.is_tracking = None
 
     def update_sat_graph(self, azimuth, elevation):
-        elevation = np.abs(np.array(elevation) - 90.)
         if self.is_tracking and azimuth and elevation:
-            x = elevation * np.cos(np.deg2rad(azimuth))
-            y = elevation * np.sin(np.deg2rad(azimuth))
+            azimuth = np.array(azimuth) - 90.
+            elevation = np.abs(np.array(elevation) - 90.)
+            x = elevation * np.cos(np.deg2rad(-azimuth))
+            y = elevation * np.sin(np.deg2rad(-azimuth))
             self.sat_data.setData(x, y)
             self.sat_point.setData([x[-1]], [y[-1]])
 
     def update_ant_graph(self, azimuth, elevation):
-        if azimuth and elevation:
+        if self.is_tracking and azimuth and elevation:
+            azimuth = np.array(azimuth) - 90.
             elevation = np.abs(np.array(elevation) - 90.)
-            # if self.is_tracking:
-            x = elevation * np.cos(np.deg2rad(azimuth))
-            y = elevation * np.sin(np.deg2rad(azimuth))
+            x = elevation * np.cos(np.deg2rad(-azimuth))
+            y = elevation * np.sin(np.deg2rad(-azimuth))
             self.ant_data.setData(x, y)
             self.ant_point.setData([x[-1]], [y[-1]])
 
