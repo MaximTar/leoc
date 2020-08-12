@@ -1,11 +1,16 @@
-from antenna_interfaces.msg import SatState, State
+from PyQt5.QtCore import QTimer
+from PyQt5.QtWidgets import QMessageBox
+from antenna_interfaces.msg import *
 from antenna_interfaces.srv import *
 from rclpy.node import Node
 
+import datetime
 
+
+# noinspection PyUnresolvedReferences
 class SubscribersAndClients(Node):
 
-    def __init__(self):
+    def __init__(self, main_window=None):
         super().__init__('subs_and_clients')
 
         self.sat_graph_slot = None
@@ -15,6 +20,7 @@ class SubscribersAndClients(Node):
         self.ant_azs, self.ant_els = [], []
 
         self.status_slot = None
+        self.clock_slot = None
 
         self.antenna_state_sub = self.create_subscription(
             State,
@@ -29,6 +35,13 @@ class SubscribersAndClients(Node):
             self._active_satellite_state_cb,
             10)
         self.sat_lat, self.sat_lon, self.sat_alt, self.sat_el, self.sat_az = None, None, None, None, None
+
+        self.heartbeat_sub = self.create_subscription(
+            Heartbeat,
+            '/antenna/heartbeat',
+            self._heartbeat_cb,
+            10)
+        self.ts = None
 
         # system
         self.sys_log_client = self.create_client(SysLog, '/antenna/sys/log')
@@ -53,6 +66,13 @@ class SubscribersAndClients(Node):
         self.params_info_client = self.create_client(ParamsInfo, '/antenna/params/info')
         self.params_client = self.create_client(Params, '/antenna/params')
         self.params_set_client = self.create_client(ParamsSet, '/antenna/params/set')
+
+        # self.heartbeat_timer = QTimer()
+        # self.heartbeat_timer.timeout.connect(self.show_server_error)
+        # self.main_window = main_window
+
+    # def show_server_error(self):
+    #     QMessageBox.critical(None, "ERROR", "Lost server connection", QMessageBox.Ok)
 
     def _active_satellite_state_cb(self, msg):
         self.sat_lat = msg.lat
@@ -92,6 +112,12 @@ class SubscribersAndClients(Node):
         if self.sat_ant_pose_slot:
             self.sat_ant_pose_slot(ant_pose=(self.ant_az, self.ant_el))
 
+    def _heartbeat_cb(self, msg):
+        # self.heartbeat_timer.start(2000)
+        self.ts = msg.ts
+        if self.clock_slot:
+            self.clock_slot(self.ts)
+
     def set_sat_graph_slot(self, sat_graph_slot):
         self.sat_graph_slot = sat_graph_slot
 
@@ -103,6 +129,9 @@ class SubscribersAndClients(Node):
 
     def set_status_slot(self, status_slot):
         self.status_slot = status_slot
+
+    def set_clock_slot(self, clock_slot):
+        self.clock_slot = clock_slot
 
     def handle_error_state(self):
         if self.status_slot:

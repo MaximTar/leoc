@@ -41,8 +41,8 @@ class AntennaPoseWidget(QGroupBox):
 
         self.setLayout(main_layout)
 
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.clear_labels)
+        # self.timer = QTimer()
+        # self.timer.timeout.connect(self.clear_labels)
 
     def update_pose(self, sat_pose=None, ant_pose=None):
         if sat_pose:

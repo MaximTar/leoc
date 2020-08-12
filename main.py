@@ -1,7 +1,7 @@
 import sys
 from threading import Thread
-
-from PyQt5.QtCore import QTimer, QSize, Qt
+import datetime
+from PyQt5.QtCore import QTimer, QSize, Qt, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QIcon, QColor
 from PyQt5.QtWidgets import *
 from antenna_interfaces.srv import *
@@ -41,6 +41,8 @@ from utils.widgets.tle_list_widget import TleListWidget
 # TODO AFTER-AFTER Time simulation mode
 # noinspection PyUnresolvedReferences,PyCallByClass,PyArgumentList,PyTypeChecker
 class MainWindow(QMainWindow):
+    timer_signal = pyqtSignal()
+
     class Status(Enum):
         OK = 1
         NOT_OK = 0
@@ -63,9 +65,6 @@ class MainWindow(QMainWindow):
         # self.set_active_btn.setEnabled(True)
 
         self.dt_status = self.Status.NOT_OK
-
-        self.status_combo_box = QComboBox(self)
-        self.create_status_bar()
 
         self.prediction_window = PredictionInputWidget(subs_and_clients, parent=self)
 
@@ -129,6 +128,21 @@ class MainWindow(QMainWindow):
 
         self.login_widget = LoginWidget(subs_and_clients)
         # self.login_widget.show()
+
+        self.timer_signal.connect(self.start_heartbeat_timer)
+        self.clock_lbl = QLabel()
+        self.status_combo_box = QComboBox(self)
+        self.create_status_bar()
+        subs_and_clients.set_clock_slot(self.update_clock_lbl)
+        self.heartbeat_timer = QTimer()
+        self.heartbeat_timer.timeout.connect(self.show_server_error)
+
+    @pyqtSlot()
+    def start_heartbeat_timer(self):
+        self.heartbeat_timer.start(2000)
+
+    def show_server_error(self):
+        QMessageBox.critical(self, "ERROR", "Lost server connection", QMessageBox.Ok)
 
     def update_timer(self):
         self.timer.start(int(self.settings.value("general_settings/map_update_period", 1000)))
@@ -377,26 +391,35 @@ class MainWindow(QMainWindow):
         status_lbl = QLabel("Status: ")
 
         status_combo_box_list = [" All", " ESC 1", " ESC 2", " Encoder 1", " Encoder 2", " Az Lim", " El Lim",
-                                 " Lim Switch 1", " Lim Switch 2", " Lim Switch 3", " Lim Switch 4", " Data"]
-
-        settings_btn = QPushButton("", self)
-        settings_btn.setIcon(QIcon(os.path.dirname(os.path.abspath(__file__)) + "/resources/icons/settings.png"))
-        settings_btn.setIconSize(QSize(20, 20))
-        settings_btn.clicked.connect(self.show_parameters_window)
+                                 " Lim Switch 1", " Lim Switch 2", " Lim Switch 3", " Lim Switch 4", " Lim Switch 5",
+                                 " Lim Switch 6", " Data"]
 
         for i in status_combo_box_list:
             self.status_combo_box.addItem(self.icon_ok, i)
 
         self.status_combo_box.adjustSize()
-        self.status_combo_box.setMaxVisibleItems(12)
+        self.status_combo_box.setMaxVisibleItems(14)
 
         self.statusBar().setStyleSheet("QStatusBar {border: 0; background-color: #FFF8DC;}")
 
-        self.statusBar().addWidget(settings_btn)
+        if self.login_widget.is_admin:
+            settings_btn = QPushButton("", self)
+            settings_btn.setIcon(QIcon(os.path.dirname(os.path.abspath(__file__)) + "/resources/icons/settings.png"))
+            settings_btn.setIconSize(QSize(20, 20))
+            settings_btn.clicked.connect(self.show_parameters_window)
+            self.statusBar().addWidget(settings_btn)
+
+        self.statusBar().addWidget(self.clock_lbl)
+
         self.statusBar().addPermanentWidget(VLine())
         self.statusBar().addPermanentWidget(status_lbl)
         self.statusBar().addPermanentWidget(self.status_combo_box)
         self.statusBar().addPermanentWidget(VLine())
+
+    def update_clock_lbl(self, ts):
+        timestamp = datetime.datetime.fromtimestamp(float(ts))
+        self.clock_lbl.setText(timestamp.strftime('%Y-%m-%d %H:%M:%S'))
+        self.timer_signal.emit()
 
     def update_status_combo_box(self, mask):
         for idx in range(len(mask)):
