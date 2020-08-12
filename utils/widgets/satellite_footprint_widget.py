@@ -9,6 +9,7 @@ EARTH_FLATTENING_COEFFICIENT = 0.003352891869237217
 EARTH_RADIUS = 6378135
 
 
+# TODO AFTER ELEVATION ANGLE (VISIBILITY)
 def _create_path(path, points, first=True, offset=0, full_range=True):
     if full_range:
         end = len(points)
