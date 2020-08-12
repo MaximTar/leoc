@@ -9,6 +9,7 @@ from antenna_interfaces.srv import *
 from utils.lines import *
 from utils.parameters_window import ParametersWindow
 from utils.settings_window import SettingsWindow
+from utils.user_db_window import UserDbWindow
 from utils.subs_and_clients import SubscribersAndClients
 from utils.tle_handler import *
 from utils.widgets.antenna_adjustment_widget import AntennaAdjustmentWidget
@@ -25,9 +26,7 @@ from utils.widgets.satellite_data_widget import SatelliteDataWidget
 from utils.widgets.tle_list_widget import TleListWidget
 
 
-# TODO 0.1 TIME + CHECK SERVER
-# TODO 6 SHOW USERDB
-# TODO LOADING
+# TODO 7 velocities + graph (admin)
 # import sys  # Suppressing the error messages
 #
 #
@@ -59,8 +58,8 @@ class MainWindow(QMainWindow):
         main_hbox = QHBoxLayout()
         main_hbox.setContentsMargins(10, 10, 10, 0)
 
-        self.set_active_btn = QPushButton("Set active", self)
-        self.set_active_btn.setToolTip("Set active satellite")
+        self.set_active_btn = QPushButton("Follow", self)
+        self.set_active_btn.setToolTip("Follow satellite")
         self.set_active_btn.clicked.connect(self.set_active_btn_clicked)
         # self.set_active_btn.setEnabled(True)
 
@@ -137,6 +136,8 @@ class MainWindow(QMainWindow):
         self.heartbeat_timer = QTimer()
         self.heartbeat_timer.timeout.connect(self.show_server_error)
 
+        self.user_db_win = UserDbWindow()
+
     @pyqtSlot()
     def start_heartbeat_timer(self):
         self.heartbeat_timer.start(2000)
@@ -191,7 +192,7 @@ class MainWindow(QMainWindow):
         add_btn.setToolTip("Add TLE to the list")
         add_btn.clicked.connect(self.add_btn_clicked)
 
-        remove_btn = QPushButton("Del", self)
+        remove_btn = QPushButton("Remove", self)
         remove_btn.setToolTip("Remove TLE from the list")
         remove_btn.clicked.connect(self.remove_btn_clicked)
 
@@ -203,11 +204,16 @@ class MainWindow(QMainWindow):
         predict_btn.setToolTip("Make prediction")
         predict_btn.clicked.connect(self.predict_btn_clicked)
 
+        show_db_btn = QPushButton("Show user DB", self)
+        show_db_btn.setToolTip("Show user database")
+        show_db_btn.clicked.connect(self.show_db_btn_clicked)
+
         btn_grid.addWidget(predict_btn, 0, 0, 1, 10)
         btn_grid.addWidget(self.set_active_btn, 0, 10, 1, 10)
         btn_grid.addWidget(add_btn, 2, 0, 1, 6)
         btn_grid.addWidget(remove_btn, 2, 7, 1, 6)
         btn_grid.addWidget(update_btn, 2, 14, 1, 6)
+        btn_grid.addWidget(show_db_btn, 3, 0, 1, 20)
 
         btn_widget.setLayout(btn_grid)
 
@@ -224,6 +230,31 @@ class MainWindow(QMainWindow):
         right_vbox.addWidget(btn_widget)
         right_widget.setLayout(right_vbox)
         return right_widget
+
+    def show_db_btn_clicked(self):
+        if srv_ready(subs_and_clients.usr_tle_client):
+            req = TlesUser.Request()
+            future = subs_and_clients.usr_tle_client.call_async(req)
+            while rclpy.ok():
+                # TODO LOADING
+                if future.done():
+                    try:
+                        response = future.result()
+                    except Exception as e:
+                        QMessageBox.warning(self, "usr_tle_client", "Cannot show user db.\n"
+                                                                    "Stacktrace: {}".format(e),
+                                            QMessageBox.Ok)
+                    else:
+                        if response.tles:
+                            self.user_db_win = UserDbWindow(response.tles)
+                            self.user_db_win.show()
+                            self.user_db_win.centerize(self)
+                            # self.tle_list_widget.update_list()
+                        else:
+                            QMessageBox.warning(self, "usr_tle_client",
+                                                "Cannot show user db (it may be empty).",
+                                                QMessageBox.Ok)
+                    break
 
     # def update_set_btn_state(self):
     #     self.set_active_btn.setEnabled(bool(self.dt_status.value))
@@ -435,10 +466,10 @@ class MainWindow(QMainWindow):
         self.parameters_window.show()
 
     def set_active_btn_clicked(self):
-        if self.tle_list_widget.selectedIndexes() or (self.set_active_btn.text() == "Set inactive"):
+        if self.tle_list_widget.selectedIndexes() or (self.set_active_btn.text() == "Stop following"):
             if srv_ready(subs_and_clients.sat_set_active_client):
                 req = SatsActiveSet.Request()
-                req.is_on = (self.set_active_btn.text() == "Set active")
+                req.is_on = (self.set_active_btn.text() == "Follow")
 
                 if req.is_on:
                     self.rid = self.tle_list_widget.selectedItems()[0]
@@ -451,24 +482,24 @@ class MainWindow(QMainWindow):
                         try:
                             response = future.result()
                         except Exception as e:
-                            QMessageBox.warning(self, "sat_set_active_client", "Cannot set active satellite.\n"
+                            QMessageBox.warning(self, "sat_set_active_client", "Cannot follow satellite.\n"
                                                                                "Stacktrace: {}".format(e),
                                                 QMessageBox.Ok)
                         else:
                             if response.res:
-                                if self.set_active_btn.text() == "Set active":
-                                    self.set_active_btn.setText("Set inactive")
+                                if self.set_active_btn.text() == "Follow":
+                                    self.set_active_btn.setText("Stop following")
                                     self.rid.setBackground(QColor("#9ee99e"))
                                     self.antenna_graph_widget.is_tracking = True
                                 else:
-                                    self.set_active_btn.setText("Set active")
+                                    self.set_active_btn.setText("Follow")
                                     self.rid.setBackground(self.background_color)
                                     self.antenna_graph_widget.is_tracking = False
                                     # self.antenna_graph_widget.clear_sat_data()
                                     self.antenna_pose_widget.clear_labels()
                                     subs_and_clients.sat_azs, subs_and_clients.sat_els = [], []
                             else:
-                                QMessageBox.warning(self, "sat_set_active_client", "Cannot set active satellite.",
+                                QMessageBox.warning(self, "sat_set_active_client", "Cannot follow satellite.",
                                                     QMessageBox.Ok)
                         break
         else:
@@ -543,7 +574,7 @@ class MainWindow(QMainWindow):
                                 if int(self.tle_list_widget.item(i).statusTip()) == response.id:
                                     self.rid = self.tle_list_widget.item(i)
                                     self.tle_list_widget.item(i).setBackground(QColor("#9ee99e"))
-                                    self.set_active_btn.setText("Set inactive")
+                                    self.set_active_btn.setText("Stop following")
                                     self.antenna_graph_widget.is_tracking = True
                     break
 

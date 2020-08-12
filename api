@@ -27,7 +27,7 @@
 - возвращает признак успешности
 
 - 2) Прочитать данные пользовательского файла TLE
-- TlesUser (string) /antenna/tles/user ()
+- TlesUser (string tles) /antenna/tles/user ()
 
 Работа со спутниками
 
