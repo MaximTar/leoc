@@ -16,6 +16,7 @@ class SubscribersAndClients(Node):
         self.sat_graph_slot = None
         self.ant_graph_slot = None
         self.sat_ant_pose_slot = None
+        self.sat_ant_vel_slot = None
         self.sat_azs, self.sat_els = [], []
         self.ant_azs, self.ant_els = [], []
 
@@ -80,6 +81,8 @@ class SubscribersAndClients(Node):
         self.sat_alt = msg.alt
         self.sat_el = msg.el
         self.sat_az = msg.az
+        self.sat_elv = msg.elv
+        self.sat_azv = msg.azv
 
         if self.sat_el < 0:
             self.sat_azs, self.sat_els = [], []
@@ -92,6 +95,9 @@ class SubscribersAndClients(Node):
 
         if self.sat_ant_pose_slot:
             self.sat_ant_pose_slot(sat_pose=(self.sat_az, self.sat_el))
+
+        if self.sat_ant_vel_slot:
+            self.sat_ant_vel_slot(sat_vel=(self.sat_azv, self.sat_elv))
 
     def _antenna_state_cb(self, msg):
         self.ant_el = msg.el
@@ -112,6 +118,9 @@ class SubscribersAndClients(Node):
         if self.sat_ant_pose_slot:
             self.sat_ant_pose_slot(ant_pose=(self.ant_az, self.ant_el))
 
+        if self.sat_ant_vel_slot:
+            self.sat_ant_vel_slot(ant_vel=(self.ant_azv, self.ant_elv))
+
     def _heartbeat_cb(self, msg):
         # self.heartbeat_timer.start(2000)
         self.ts = msg.ts
@@ -127,6 +136,9 @@ class SubscribersAndClients(Node):
     def set_ant_pose_slot(self, ant_pose_slot):
         self.sat_ant_pose_slot = ant_pose_slot
 
+    def set_ant_vel_slot(self, ant_vel_slot):
+        self.sat_ant_vel_slot = ant_vel_slot
+
     def set_status_slot(self, status_slot):
         self.status_slot = status_slot
 
@@ -135,4 +147,4 @@ class SubscribersAndClients(Node):
 
     def handle_error_state(self):
         if self.status_slot:
-            self.status_slot(f'{self.ant_err_state:012b}'[::-1])
+            self.status_slot(f'{self.ant_err_state:014b}'[::-1])

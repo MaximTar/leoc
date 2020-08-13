@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QGridLayout, QGroupBox, QLabel
 class AntennaPoseWidget(QGroupBox):
     def __init__(self):
         super().__init__()
-        # self.setTitle("Antenna's desired and real poses and velocities")
+        self.setTitle("Position")
 
         main_layout = QGridLayout()
 
@@ -19,7 +19,9 @@ class AntennaPoseWidget(QGroupBox):
         self.sat_el_label = QLabel("", self)
 
         # second column
-        main_layout.addWidget(QLabel("Satellite", self), 0, 2)
+        sat_lbl = QLabel("Satellite", self)
+        sat_lbl.setStyleSheet('color: red')
+        main_layout.addWidget(sat_lbl, 0, 2)
         main_layout.addWidget(self.sat_az_label, 1, 2)
         main_layout.addWidget(self.sat_el_label, 2, 2)
 
@@ -27,7 +29,9 @@ class AntennaPoseWidget(QGroupBox):
         self.ant_el_label = QLabel("", self)
 
         # third column
-        main_layout.addWidget(QLabel("Antenna", self), 0, 4)
+        ant_lbl = QLabel("Antenna", self)
+        ant_lbl.setStyleSheet('color: green')
+        main_layout.addWidget(ant_lbl, 0, 4)
         main_layout.addWidget(self.ant_az_label, 1, 4)
         main_layout.addWidget(self.ant_el_label, 2, 4)
 

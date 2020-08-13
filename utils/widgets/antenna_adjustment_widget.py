@@ -9,7 +9,7 @@ from utils.srv_client_handler import srv_ready
 class AntennaAdjustmentWidget(QGroupBox):
     def __init__(self, settings, subs_and_clients):
         super().__init__()
-        # self.setTitle("Change antenna's azimuth and/or elevation offset")
+        self.setTitle("Antenna offset correction")
         self.subs_and_clients = subs_and_clients
 
         self.settings = settings
@@ -69,14 +69,21 @@ class AntennaAdjustmentWidget(QGroupBox):
         # main_layout.addWidget(save_azimuth_btn, 0, 6)
         # main_layout.addWidget(save_elevation_btn, 1, 6)
 
+        # fifth column
+        self.azimuth_lbl = QLabel("0.00")
+        self.elevation_lbl = QLabel("0.00")
+
+        main_layout.addWidget(self.azimuth_lbl, 0, 6)
+        main_layout.addWidget(self.elevation_lbl, 1, 6)
+
         self.setLayout(main_layout)
 
     def azimuth_minus_btn_clicked(self):
         if srv_ready(self.subs_and_clients.params_set_client):
-            self.az_corr -= self.azimuth_spinbox.value()
+            req_az_corr = self.az_corr - self.azimuth_spinbox.value()
             req = ParamsSet.Request()
             req.names = ["az_cor"]
-            req.values = [str(self.az_corr)]
+            req.values = [str(req_az_corr)]
             future = self.subs_and_clients.params_set_client.call_async(req)
             while rclpy.ok():
                 # TODO LOADING
@@ -88,21 +95,18 @@ class AntennaAdjustmentWidget(QGroupBox):
                                                                        "Stacktrace: {}".format(e), QMessageBox.Ok)
                     else:
                         if response.res:
-                            # QMessageBox.information(self, "params_set_client",
-                            #                         "Antenna moves to ({}, {}) coordinates.".format(req.values[0],
-                            #                                                                         req.values[1]),
-                            #                         QMessageBox.Ok)
-                            pass
+                            self.az_corr = req_az_corr
+                            self.azimuth_lbl.setText("{:.2f}".format(self.az_corr))
                         else:
                             QMessageBox.warning(self, "params_set_client", "Cannot change parameters.", QMessageBox.Ok)
                     break
 
     def azimuth_plus_btn_clicked(self):
         if srv_ready(self.subs_and_clients.params_set_client):
-            self.az_corr += self.azimuth_spinbox.value()
+            req_az_corr = self.az_corr + self.azimuth_spinbox.value()
             req = ParamsSet.Request()
             req.names = ["az_cor"]
-            req.values = [str(self.az_corr)]
+            req.values = [str(req_az_corr)]
             future = self.subs_and_clients.params_set_client.call_async(req)
             while rclpy.ok():
                 # TODO LOADING
@@ -114,11 +118,8 @@ class AntennaAdjustmentWidget(QGroupBox):
                                                                        "Stacktrace: {}".format(e), QMessageBox.Ok)
                     else:
                         if response.res:
-                            # QMessageBox.information(self, "params_set_client",
-                            #                         "Antenna moves to ({}, {}) coordinates.".format(req.values[0],
-                            #                                                                         req.values[1]),
-                            #                         QMessageBox.Ok)
-                            pass
+                            self.az_corr = req_az_corr
+                            self.azimuth_lbl.setText("{:.2f}".format(self.az_corr))
                         else:
                             QMessageBox.warning(self, "params_set_client", "Cannot change parameters.", QMessageBox.Ok)
                     break
@@ -129,10 +130,10 @@ class AntennaAdjustmentWidget(QGroupBox):
 
     def elevation_minus_btn_clicked(self):
         if srv_ready(self.subs_and_clients.params_set_client):
-            self.el_corr -= self.azimuth_spinbox.value()
+            req_el_corr = self.el_corr - self.elevation_spinbox.value()
             req = ParamsSet.Request()
             req.names = ["el_cor"]
-            req.values = [str(self.el_corr)]
+            req.values = [str(req_el_corr)]
             future = self.subs_and_clients.params_set_client.call_async(req)
             while rclpy.ok():
                 # TODO LOADING
@@ -144,21 +145,18 @@ class AntennaAdjustmentWidget(QGroupBox):
                                                                        "Stacktrace: {}".format(e), QMessageBox.Ok)
                     else:
                         if response.res:
-                            # QMessageBox.information(self, "params_set_client",
-                            #                         "Antenna moves to ({}, {}) coordinates.".format(req.values[0],
-                            #                                                                         req.values[1]),
-                            #                         QMessageBox.Ok)
-                            pass
+                            self.el_corr = req_el_corr
+                            self.elevation_lbl.setText("{:.2f}".format(self.el_corr))
                         else:
                             QMessageBox.warning(self, "params_set_client", "Cannot change parameters.", QMessageBox.Ok)
                     break
 
     def elevation_plus_btn_clicked(self):
         if srv_ready(self.subs_and_clients.params_set_client):
-            self.el_corr += self.azimuth_spinbox.value()
+            req_el_corr = self.el_corr + self.elevation_spinbox.value()
             req = ParamsSet.Request()
             req.names = ["el_cor"]
-            req.values = [str(self.el_corr)]
+            req.values = [str(req_el_corr)]
             future = self.subs_and_clients.params_set_client.call_async(req)
             while rclpy.ok():
                 # TODO LOADING
@@ -170,11 +168,8 @@ class AntennaAdjustmentWidget(QGroupBox):
                                                                        "Stacktrace: {}".format(e), QMessageBox.Ok)
                     else:
                         if response.res:
-                            # QMessageBox.information(self, "params_set_client",
-                            #                         "Antenna moves to ({}, {}) coordinates.".format(req.values[0],
-                            #                                                                         req.values[1]),
-                            #                         QMessageBox.Ok)
-                            pass
+                            self.el_corr = req_el_corr
+                            self.elevation_lbl.setText("{:.2f}".format(self.el_corr))
                         else:
                             QMessageBox.warning(self, "params_set_client", "Cannot change parameters.", QMessageBox.Ok)
                     break
