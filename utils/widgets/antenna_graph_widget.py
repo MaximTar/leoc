@@ -66,5 +66,6 @@ class AntennaGraphWidget(QWidget):
             self.ant_data.setData(x, y)
             self.ant_point.setData([x[-1]], [y[-1]])
 
-    def clear_sat_data(self):
+    def clear_data(self):
         self.sat_data = self.plot.plot(pen=pg.mkPen(color='r', width=2))
+        self.ant_data = self.plot.plot(pen=pg.mkPen(color='g', width=2))

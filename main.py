@@ -22,6 +22,7 @@ from utils.widgets.antenna_velocities_widget import AntennaVelocitiesWidget
 from utils.widgets.login_widget import LoginWidget
 from utils.widgets.map_widget import MapWidget
 from utils.widgets.prediction_input_widget import PredictionInputWidget
+from utils.widgets.velocity_graph_widget import VelocityGraphWidget
 from utils.prediction_window_old import PredictionWindow
 from utils.widgets.satellite_data_widget import SatelliteDataWidget
 from utils.widgets.tle_list_widget import TleListWidget
@@ -52,6 +53,9 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("LEOC")
         # TODO MAKE FUNCTIONAL TO RELOGIN
 
+        self.login_widget = LoginWidget(subs_and_clients)
+        # self.login_widget.show()
+
         self.icon_ok = QIcon(os.path.dirname(os.path.abspath(__file__)) + "/resources/icons/status_ok.png")
         self.icon_fail = QIcon(os.path.dirname(os.path.abspath(__file__)) + "/resources/icons/status_fail.png")
         self.background_color = QColor("#fcfcfc")
@@ -80,8 +84,9 @@ class MainWindow(QMainWindow):
         self.satellite_data_widget = SatelliteDataWidget(settings=self.settings)
         self.antenna_graph_widget = AntennaGraphWidget()
         self.antenna_pose_widget = AntennaPoseWidget()
-        # self.velocity_graph_widget = !
+        self.velocity_graph_widget = VelocityGraphWidget()
         self.antenna_velocities_widget = AntennaVelocitiesWidget()
+        self.antenna_velocities_widget.set_vel_graph_slot(self.velocity_graph_widget.update_graph)
         self.antenna_adjustment_widget = AntennaAdjustmentWidget(settings=self.settings,
                                                                  subs_and_clients=subs_and_clients)
         self.antenna_control_widget = AntennaControlWidget(subs_and_clients)
@@ -128,9 +133,6 @@ class MainWindow(QMainWindow):
         subs_and_clients.set_status_slot(self.update_status_combo_box)
 
         # self.prediction_window = PredictionWindow()
-
-        self.login_widget = LoginWidget(subs_and_clients)
-        # self.login_widget.show()
 
         self.timer_signal.connect(self.start_heartbeat_timer)
         self.clock_lbl = QLabel()
@@ -188,7 +190,9 @@ class MainWindow(QMainWindow):
         splitter.setStretchFactor(1, 1)
         splitter.addWidget(self.antenna_graph_widget)
         splitter.addWidget(self.antenna_pose_widget)
-        splitter.addWidget(self.antenna_velocities_widget)
+        if self.login_widget.is_admin:
+            splitter.addWidget(self.velocity_graph_widget)
+            splitter.addWidget(self.antenna_velocities_widget)
         splitter.addWidget(self.antenna_adjustment_widget)
         splitter.addWidget(self.antenna_control_widget)
         splitter.addWidget(self.antenna_video_widget)
@@ -513,9 +517,10 @@ class MainWindow(QMainWindow):
                                     self.set_active_btn.setText("Track")
                                     self.rid.setBackground(self.background_color)
                                     self.antenna_graph_widget.is_tracking = False
-                                    # self.antenna_graph_widget.clear_sat_data()
                                     self.antenna_pose_widget.clear_labels()
+                                    self.antenna_velocities_widget.clear_labels()
                                     subs_and_clients.sat_azs, subs_and_clients.sat_els = [], []
+                                    subs_and_clients.ant_azs, subs_and_clients.ant_els = [], []
                             else:
                                 QMessageBox.warning(self, "sat_set_active_client", "Cannot Track satellite.",
                                                     QMessageBox.Ok)

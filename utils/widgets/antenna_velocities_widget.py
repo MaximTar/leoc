@@ -41,6 +41,8 @@ class AntennaVelocitiesWidget(QGroupBox):
 
         self.setLayout(main_layout)
 
+        self.vel_graph_slot = None
+
         # self.timer = QTimer()
         # self.timer.timeout.connect(self.clear_labels)
 
@@ -52,11 +54,15 @@ class AntennaVelocitiesWidget(QGroupBox):
             self.ant_azv_label.setText("{:.2f}".format(ant_vel[0]))
             self.ant_elv_label.setText("{:.2f}".format(ant_vel[1]))
         if self.ant_azv_label.text() and self.sat_azv_label.text():
-            az_diff = float(self.sat_azv_label.text()) - float(self.ant_azv_label.text())
-            self.diff_azv_label.setText("{:.2f}".format(az_diff))
+            azv_diff = float(self.sat_azv_label.text()) - float(self.ant_azv_label.text())
+            self.diff_azv_label.setText("{:.2f}".format(azv_diff))
+            if self.vel_graph_slot:
+                self.vel_graph_slot(azv_diff=azv_diff)
         if self.ant_elv_label.text() and self.sat_elv_label.text():
-            el_diff = float(self.sat_elv_label.text()) - float(self.ant_elv_label.text())
-            self.diff_elv_label.setText("{:.2f}".format(el_diff))
+            elv_diff = float(self.sat_elv_label.text()) - float(self.ant_elv_label.text())
+            self.diff_elv_label.setText("{:.2f}".format(elv_diff))
+            if self.vel_graph_slot:
+                self.vel_graph_slot(elv_diff=elv_diff)
 
     def clear_labels(self):
         self.sat_azv_label.setText(str(""))
@@ -65,3 +71,6 @@ class AntennaVelocitiesWidget(QGroupBox):
         self.ant_elv_label.setText(str(""))
         self.diff_azv_label.setText(str(""))
         self.diff_elv_label.setText(str(""))
+
+    def set_vel_graph_slot(self, vel_graph_slot):
+        self.vel_graph_slot = vel_graph_slot
