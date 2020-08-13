@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QMainWindow, QLabel, QVBoxLayout, QWidget, QScrollAr
 class UserDbWindow(QMainWindow):
     def __init__(self, string=None, parent=None):
         super().__init__(parent=parent)
-        self.setWindowTitle("Prediction")
+        self.setWindowTitle("User Database")
         self.setWindowModality(Qt.ApplicationModal)
 
         layout = QVBoxLayout()
