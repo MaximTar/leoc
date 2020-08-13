@@ -45,6 +45,9 @@ class AntennaPoseWidget(QGroupBox):
 
         self.setLayout(main_layout)
 
+        self.pose_graph_slot = None
+        self.az_diffs, self.el_diffs = [], []
+
         # self.timer = QTimer()
         # self.timer.timeout.connect(self.clear_labels)
 
@@ -58,9 +61,15 @@ class AntennaPoseWidget(QGroupBox):
         if self.ant_az_label.text() and self.sat_az_label.text():
             az_diff = float(self.sat_az_label.text()) - float(self.ant_az_label.text())
             self.diff_az_label.setText("{:.2f}".format(az_diff))
+            self.az_diffs.append(az_diff)
+            if self.pose_graph_slot:
+                self.pose_graph_slot(az_diff=self.az_diffs)
         if self.ant_el_label.text() and self.sat_el_label.text():
             el_diff = float(self.sat_el_label.text()) - float(self.ant_el_label.text())
             self.diff_el_label.setText("{:.2f}".format(el_diff))
+            self.el_diffs.append(el_diff)
+            if self.pose_graph_slot:
+                self.pose_graph_slot(el_diff=self.el_diffs)
 
     def clear_labels(self):
         self.sat_az_label.setText(str(""))
@@ -69,3 +78,9 @@ class AntennaPoseWidget(QGroupBox):
         self.ant_el_label.setText(str(""))
         self.diff_az_label.setText(str(""))
         self.diff_el_label.setText(str(""))
+
+    def set_pose_graph_slot(self, pose_graph_slot):
+        self.pose_graph_slot = pose_graph_slot
+
+    def clear_data(self):
+        self.az_diffs, self.el_diffs = [], []

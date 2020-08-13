@@ -21,8 +21,9 @@ from utils.widgets.antenna_video_widget import AntennaVideoWidget
 from utils.widgets.antenna_velocities_widget import AntennaVelocitiesWidget
 from utils.widgets.login_widget import LoginWidget
 from utils.widgets.map_widget import MapWidget
+from utils.widgets.pose_diff_graph_widget import PoseDiffGraphWidget
 from utils.widgets.prediction_input_widget import PredictionInputWidget
-from utils.widgets.velocity_graph_widget import VelocityGraphWidget
+from utils.widgets.velocity_diff_graph_widget import VelocityDiffGraphWidget
 from utils.prediction_window_old import PredictionWindow
 from utils.widgets.satellite_data_widget import SatelliteDataWidget
 from utils.widgets.tle_list_widget import TleListWidget
@@ -83,8 +84,10 @@ class MainWindow(QMainWindow):
                                              data_slot=self.update_sat_data)
         self.satellite_data_widget = SatelliteDataWidget(settings=self.settings)
         self.antenna_graph_widget = AntennaGraphWidget()
+        self.pose_graph_widget = PoseDiffGraphWidget()
         self.antenna_pose_widget = AntennaPoseWidget()
-        self.velocity_graph_widget = VelocityGraphWidget()
+        self.antenna_pose_widget.set_pose_graph_slot(self.pose_graph_widget.update_graph)
+        self.velocity_graph_widget = VelocityDiffGraphWidget()
         self.antenna_velocities_widget = AntennaVelocitiesWidget()
         self.antenna_velocities_widget.set_vel_graph_slot(self.velocity_graph_widget.update_graph)
         self.antenna_adjustment_widget = AntennaAdjustmentWidget(settings=self.settings,
@@ -186,17 +189,29 @@ class MainWindow(QMainWindow):
         self.check_active_satellite()
 
     def construct_left_widget(self):
+        clear_graphs_btn = QPushButton("Clear graph")
+        clear_graphs_btn.clicked.connect(self.clear_graphs_btn_clicked)
+
         splitter = QSplitter(Qt.Vertical)
         splitter.setStretchFactor(1, 1)
+        splitter.addWidget(self.antenna_control_widget)
+        splitter.addWidget(clear_graphs_btn)
         splitter.addWidget(self.antenna_graph_widget)
+        if self.login_widget.is_admin:
+            splitter.addWidget(self.pose_graph_widget)
         splitter.addWidget(self.antenna_pose_widget)
         if self.login_widget.is_admin:
             splitter.addWidget(self.velocity_graph_widget)
             splitter.addWidget(self.antenna_velocities_widget)
         splitter.addWidget(self.antenna_adjustment_widget)
-        splitter.addWidget(self.antenna_control_widget)
         splitter.addWidget(self.antenna_video_widget)
         return splitter
+
+    def clear_graphs_btn_clicked(self):
+        subs_and_clients.sat_azs, subs_and_clients.sat_els = [], []
+        subs_and_clients.ant_azs, subs_and_clients.ant_els = [], []
+        self.antenna_pose_widget.clear_data()
+        self.antenna_velocities_widget.clear_data()
 
     def construct_right_widget(self):
         right_widget = QWidget()
@@ -521,6 +536,8 @@ class MainWindow(QMainWindow):
                                     self.antenna_velocities_widget.clear_labels()
                                     subs_and_clients.sat_azs, subs_and_clients.sat_els = [], []
                                     subs_and_clients.ant_azs, subs_and_clients.ant_els = [], []
+                                    self.antenna_pose_widget.clear_data()
+                                    self.antenna_velocities_widget.clear_data()
                             else:
                                 QMessageBox.warning(self, "sat_set_active_client", "Cannot Track satellite.",
                                                     QMessageBox.Ok)

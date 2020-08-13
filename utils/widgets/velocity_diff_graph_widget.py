@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout
 from pyqtgraph.Qt import QtCore
 
 
-class VelocityGraphWidget(QWidget):
+class VelocityDiffGraphWidget(QWidget):
     def __init__(self):
         super().__init__()
 

@@ -10,7 +10,7 @@ class AntennaControlWidget(QGroupBox):
     def __init__(self, subs_and_clients):
         super().__init__()
         self.subs_and_clients = subs_and_clients
-        # self.setTitle("Change antenna's azimuth and/or elevation offset")
+        self.setTitle("Set antenna position")
 
         main_layout = QGridLayout()
 
