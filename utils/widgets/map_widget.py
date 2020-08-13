@@ -17,9 +17,10 @@ SAT_ICON_PATH = os.path.dirname(os.path.abspath(__file__)) + "/../../resources/i
 SAT_ICON_SIZE = 20
 
 
+# noinspection PyUnresolvedReferences
 class MapWidget(QWidget):
     # not sure, that this is a good solution (to pass slot, list and window to the constructor)
-    def __init__(self, orb_list=None, uncheck_slot=None, idx_list=None, settings_window=None):
+    def __init__(self, orb_list=None, uncheck_slot=None, idx_list=None, settings_window=None, ts=None):
         super().__init__()
         self.uncheck_slot = uncheck_slot
         self.idx_list = idx_list
@@ -51,7 +52,9 @@ class MapWidget(QWidget):
         if self.orb_list is not None:
             self.add_satellite_widgets()
 
-        terminator = TerminatorWidget()
+        self.ts = ts if ts else None
+
+        terminator = TerminatorWidget(self.ts)
         self.stacked_layout.addWidget(terminator)
 
         self.setLayout(self.stacked_layout)
@@ -65,7 +68,7 @@ class MapWidget(QWidget):
                     -float(self.settings_window.settings.value("general_settings/observer_latitude", 0)) + 90)]
 
     def create_sat_lbl(self, orb):
-        now = datetime.utcnow()
+        now = datetime.utcfromtimestamp(self.ts) if self.ts else datetime.utcnow()
         sat_lbl = QLabel("", self)
         sat_lbl.setAlignment(Qt.AlignLeft | Qt.AlignTop)
         sat_lbl.setPixmap(
@@ -89,8 +92,8 @@ class MapWidget(QWidget):
         self.sat_labels.clear()
         self.sat_label_qpoints.clear()
         for orb in self.orb_list:
-            track = SatelliteTrackWidget(orb)
-            footprint = SatelliteFootprintWidget(orb)
+            track = SatelliteTrackWidget(orb, self.ts)
+            footprint = SatelliteFootprintWidget(orb, self.ts)
             sat_lbl, sat_qpoint = self.create_sat_lbl(orb)
             if track.no_points:
                 QMessageBox.warning(self, "Warning", "No track available", QMessageBox.Ok)
@@ -120,7 +123,7 @@ class MapWidget(QWidget):
         # insert before background
         self.add_satellite_widgets()
 
-        terminator = TerminatorWidget()
+        terminator = TerminatorWidget(self.ts)
         self.stacked_layout.addWidget(terminator)
 
         # activate widgets

@@ -1,6 +1,6 @@
-import sys
-from threading import Thread
 import datetime
+from threading import Thread
+
 from PyQt5.QtCore import QTimer, QSize, Qt, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QIcon, QColor
 from PyQt5.QtWidgets import *
@@ -9,24 +9,22 @@ from antenna_interfaces.srv import *
 from utils.lines import *
 from utils.parameters_window import ParametersWindow
 from utils.settings_window import SettingsWindow
-from utils.user_db_window import UserDbWindow
 from utils.subs_and_clients import SubscribersAndClients
 from utils.tle_handler import *
+from utils.user_db_window import UserDbWindow
 from utils.widgets.antenna_adjustment_widget import AntennaAdjustmentWidget
 from utils.widgets.antenna_control_widget import AntennaControlWidget
 from utils.widgets.antenna_graph_widget import AntennaGraphWidget
 from utils.widgets.antenna_pose_widget import AntennaPoseWidget
-from utils.widgets.antenna_time_widget import AntennaTimeWidget
-from utils.widgets.antenna_video_widget import AntennaVideoWidget
 from utils.widgets.antenna_velocities_widget import AntennaVelocitiesWidget
+from utils.widgets.antenna_video_widget import AntennaVideoWidget
 from utils.widgets.login_widget import LoginWidget
 from utils.widgets.map_widget import MapWidget
 from utils.widgets.pose_diff_graph_widget import PoseDiffGraphWidget
 from utils.widgets.prediction_input_widget import PredictionInputWidget
-from utils.widgets.velocity_diff_graph_widget import VelocityDiffGraphWidget
-from utils.prediction_window_old import PredictionWindow
 from utils.widgets.satellite_data_widget import SatelliteDataWidget
 from utils.widgets.tle_list_widget import TleListWidget
+from utils.widgets.velocity_diff_graph_widget import VelocityDiffGraphWidget
 
 
 # TODO 7 velocities + graph (admin)
@@ -54,6 +52,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("LEOC")
         # TODO MAKE FUNCTIONAL TO RELOGIN
 
+        self.timestamp = None
         self.login_widget = LoginWidget(subs_and_clients)
         # self.login_widget.show()
 
@@ -79,7 +78,7 @@ class MainWindow(QMainWindow):
 
         self.parameters_window = ParametersWindow(subs_and_clients, parent=self)
 
-        self.map_widget = MapWidget(settings_window=self.settings_window)
+        self.map_widget = MapWidget(settings_window=self.settings_window, ts=self.timestamp)
         self.tle_list_widget = TleListWidget(subs_and_clients, parent_slot=self.update_map_widget,
                                              data_slot=self.update_sat_data)
         self.satellite_data_widget = SatelliteDataWidget(settings=self.settings)
@@ -180,7 +179,7 @@ class MainWindow(QMainWindow):
         if self.tle_list_widget.selectedIndexes():
             tle = get_tle_by_index(self.tle_list_widget.selectedIndexes()[0].row())
             orb = get_orb_by_tle(tle)
-            self.satellite_data_widget.update_data(orb)
+            self.satellite_data_widget.update_data(orb, self.timestamp)
 
     def remove_from_tle_list_widget(self, index):
         remove_tle_by_index(index)
@@ -485,8 +484,9 @@ class MainWindow(QMainWindow):
     def update_clock_lbl(self, ts):
         if self.server_error_box:
             self.server_error_box.close()
-        timestamp = datetime.datetime.fromtimestamp(float(ts))
-        self.clock_lbl.setText(timestamp.strftime('%Y-%m-%d %H:%M:%S'))
+        self.timestamp = ts
+        date_time = datetime.datetime.fromtimestamp(float(ts))
+        self.clock_lbl.setText(date_time.strftime('%Y-%m-%d %H:%M:%S'))
         self.timer_signal.emit()
 
     def update_status_combo_box(self, mask):

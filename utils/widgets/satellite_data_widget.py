@@ -111,8 +111,8 @@ class SatelliteDataWidget(QWidget):
         self.setLayout(self.grid_layout)
 
     # noinspection PyBroadException
-    def update_data(self, orb):
-        now = datetime.utcnow()
+    def update_data(self, orb, ts=None):
+        now = datetime.utcfromtimestamp(ts) if ts else datetime.utcnow()
 
         try:
             if self.settings:

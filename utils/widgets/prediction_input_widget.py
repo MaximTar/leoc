@@ -1,5 +1,5 @@
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QGridLayout, QWidget, QLabel, QSpinBox, QDoubleSpinBox, QMainWindow, QPushButton
+from PyQt5.QtWidgets import QGridLayout, QWidget, QLabel, QSpinBox, QDoubleSpinBox, QMainWindow
 
 # from utils.prediction_window import PredictionWindow
 from utils.prediction_window_old import PredictionWindow
@@ -49,7 +49,7 @@ class PredictionInputWidget(QMainWindow):
         if prnt:
             self.move(prnt.window().frameGeometry().topLeft() + prnt.window().rect().center() - self.rect().center())
 
-    def predict_btn_clicked(self):
+    def predict_btn_clicked(self, ts):
         # prediction_window = PredictionWindow(self.subs_and_clients, self.start_spinbox.value(),
         #                                      self.length_spinbox.value(), self.horizon_spinbox.value(),
         #                                      parent=self.parent)
@@ -63,7 +63,7 @@ class PredictionInputWidget(QMainWindow):
             self.close()
             self.prediction_window = PredictionWindow(
                 input_arr=[self.start_spinbox.value(), self.length_spinbox.value(), self.horizon_spinbox.value()],
-                orb=orb)
+                orb=orb, ts=ts)
             self.prediction_window.centerize(self.parent)
             self.prediction_window.show()
         else:

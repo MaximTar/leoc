@@ -1,8 +1,10 @@
 from datetime import datetime
 from math import acos, atan2, cos, degrees, radians, sin, sqrt
+
 from PyQt5.QtCore import Qt, QPointF
 from PyQt5.QtGui import QPainter, QPainterPath, QPolygon
 from PyQt5.QtWidgets import QWidget
+
 from utils.qpoints_utils import *
 
 EARTH_FLATTENING_COEFFICIENT = 0.003352891869237217
@@ -27,9 +29,10 @@ def _create_path(path, points, first=True, offset=0, full_range=True):
 
 
 class SatelliteFootprintWidget(QWidget):
-    def __init__(self, orb):
+    def __init__(self, orb, ts=None):
         super().__init__()
         self.orb = orb
+        self.ts = ts
         self.points = self.__create_points_array()
         self.no_points = False
         if self.points is None:
@@ -72,7 +75,7 @@ class SatelliteFootprintWidget(QWidget):
         """
         Modified math from https://github.com/trehn/termtrack.git.
         """
-        now = datetime.utcnow()
+        now = datetime.utcfromtimestamp(self.ts) if self.ts else datetime.utcnow()
         # noinspection PyBroadException
         try:
             lon, lat, alt = self.orb.get_lonlatalt(now)

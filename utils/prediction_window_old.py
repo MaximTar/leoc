@@ -6,15 +6,17 @@ from PyQt5.QtWidgets import QMainWindow, QTableWidget, QLabel, QTableWidgetItem
 
 
 class PredictionWindow(QMainWindow):
-    def __init__(self, settings=None, orb=None, input_arr=None):
+    def __init__(self, settings=None, orb=None, input_arr=None, ts=None):
         super().__init__()
         self.setWindowTitle("Prediction")
         self.setWindowModality(Qt.ApplicationModal)
 
+        self.ts = ts if ts else None
+
         table_widget = QTableWidget(self)
 
         if orb and settings:
-            now = datetime.datetime.utcnow()
+            now = datetime.datetime.utcfromtimestamp(self.ts) if self.ts else datetime.datetime.utcnow()
             # noinspection PyBroadException
             try:
                 predictions = orb.get_next_passes(now, int(settings.value("general_settings/hours_passes", 24)),
@@ -40,7 +42,7 @@ class PredictionWindow(QMainWindow):
                 table_widget = QLabel("No prediction", self)
                 table_widget.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
         elif orb and input_arr:
-            now = datetime.datetime.utcnow()
+            now = datetime.datetime.utcfromtimestamp(self.ts) if self.ts else datetime.datetime.utcnow()
             # noinspection PyBroadException
             try:
                 predictions = orb.get_next_passes(utc_time=(now + datetime.timedelta(hours=int(input_arr[0]))),

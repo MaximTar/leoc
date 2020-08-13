@@ -1,15 +1,17 @@
 from datetime import datetime, timedelta
 
+from PyQt5.QtCore import Qt, QPointF
 from PyQt5.QtGui import QPainter, QPainterPath
-from PyQt5.QtCore import Qt, QPointF, QTimer
 from PyQt5.QtWidgets import QWidget
+
 from utils.qpoints_utils import *
 
 
 class SatelliteTrackWidget(QWidget):
-    def __init__(self, orb):
+    def __init__(self, orb, ts=None):
         super().__init__()
         self.orb = orb
+        self.ts = ts
         self.points = self.__create_points_array()
         self.no_points = False
         if self.points is None:
@@ -38,7 +40,7 @@ class SatelliteTrackWidget(QWidget):
 
         # get points for two revolutions
         points = []
-        now = datetime.utcnow()
+        now = datetime.utcfromtimestamp(self.ts) if self.ts else datetime.utcnow()
         then = now - timedelta(minutes=revolution_time)
         later = now + timedelta(minutes=revolution_time)
         while then < later:

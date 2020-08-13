@@ -2,8 +2,7 @@ from datetime import datetime
 
 import numpy as np
 from PyQt5.QtCore import Qt, QPointF
-from PyQt5.QtGui import QPainter, QPainterPath, QPen, QBrush
-
+from PyQt5.QtGui import QPainter, QPainterPath, QPen
 from PyQt5.QtWidgets import QWidget
 
 from utils.qpoints_utils import qpoints_scaling
@@ -111,8 +110,8 @@ def day_night_terminator(date, delta=0.25, lon_min=-180, lon_max=180):
     return longitudes, latitudes
 
 
-def _create_points_array():
-    now = datetime.utcnow()
+def _create_points_array(ts=None):
+    now = datetime.utcfromtimestamp(ts) if ts else datetime.utcnow()
     longs, lats = day_night_terminator(now)
     coordinates = tuple(zip(longs, lats))
     points = []
@@ -127,9 +126,9 @@ class TerminatorWidget(QWidget):
     https://github.com/matplotlib/basemap/tree/5f6a39f46464794dab31915a22073e07b347a331
     """
 
-    def __init__(self):
+    def __init__(self, ts=None):
         super().__init__()
-        self.points = _create_points_array()
+        self.points = _create_points_array(ts=ts)
 
     def paintEvent(self, event):
         painter = QPainter(self)
