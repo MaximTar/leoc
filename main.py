@@ -18,6 +18,7 @@ from utils.widgets.antenna_graph_widget import AntennaGraphWidget
 from utils.widgets.antenna_pose_widget import AntennaPoseWidget
 from utils.widgets.antenna_time_widget import AntennaTimeWidget
 from utils.widgets.antenna_video_widget import AntennaVideoWidget
+from utils.widgets.antenna_velocities_widget import AntennaVelocitiesWidget
 from utils.widgets.login_widget import LoginWidget
 from utils.widgets.map_widget import MapWidget
 from utils.widgets.prediction_input_widget import PredictionInputWidget
@@ -58,8 +59,8 @@ class MainWindow(QMainWindow):
         main_hbox = QHBoxLayout()
         main_hbox.setContentsMargins(10, 10, 10, 0)
 
-        self.set_active_btn = QPushButton("Follow", self)
-        self.set_active_btn.setToolTip("Follow satellite")
+        self.set_active_btn = QPushButton("Track", self)
+        self.set_active_btn.setToolTip("Track satellite")
         self.set_active_btn.clicked.connect(self.set_active_btn_clicked)
         # self.set_active_btn.setEnabled(True)
 
@@ -79,6 +80,8 @@ class MainWindow(QMainWindow):
         self.satellite_data_widget = SatelliteDataWidget(settings=self.settings)
         self.antenna_graph_widget = AntennaGraphWidget()
         self.antenna_pose_widget = AntennaPoseWidget()
+        # self.velocity_graph_widget = !
+        self.antenna_velocities_widget = AntennaVelocitiesWidget()
         self.antenna_adjustment_widget = AntennaAdjustmentWidget(settings=self.settings,
                                                                  subs_and_clients=subs_and_clients)
         self.antenna_control_widget = AntennaControlWidget(subs_and_clients)
@@ -121,6 +124,7 @@ class MainWindow(QMainWindow):
         subs_and_clients.set_sat_graph_slot(self.antenna_graph_widget.update_sat_graph)
         subs_and_clients.set_ant_graph_slot(self.antenna_graph_widget.update_ant_graph)
         subs_and_clients.set_ant_pose_slot(self.antenna_pose_widget.update_pose)
+        subs_and_clients.set_ant_vel_slot(self.antenna_velocities_widget.update_velocity)
         subs_and_clients.set_status_slot(self.update_status_combo_box)
 
         # self.prediction_window = PredictionWindow()
@@ -137,13 +141,21 @@ class MainWindow(QMainWindow):
         self.heartbeat_timer.timeout.connect(self.show_server_error)
 
         self.user_db_win = UserDbWindow()
+        self.server_error_box = None
 
     @pyqtSlot()
     def start_heartbeat_timer(self):
         self.heartbeat_timer.start(2000)
 
     def show_server_error(self):
-        QMessageBox.critical(self, "ERROR", "Lost server connection", QMessageBox.Ok)
+        if self.server_error_box:
+            self.server_error_box.close()
+        self.server_error_box = QMessageBox(self)
+        self.server_error_box.setIcon(QMessageBox.Critical)
+        self.server_error_box.setWindowTitle("ERROR")
+        self.server_error_box.setText("Lost server connection")
+        self.server_error_box.setStandardButtons(QMessageBox.Ok)
+        self.server_error_box.show()
 
     def update_timer(self):
         self.timer.start(int(self.settings.value("general_settings/map_update_period", 1000)))
@@ -176,6 +188,7 @@ class MainWindow(QMainWindow):
         splitter.setStretchFactor(1, 1)
         splitter.addWidget(self.antenna_graph_widget)
         splitter.addWidget(self.antenna_pose_widget)
+        splitter.addWidget(self.antenna_velocities_widget)
         splitter.addWidget(self.antenna_adjustment_widget)
         splitter.addWidget(self.antenna_control_widget)
         splitter.addWidget(self.antenna_video_widget)
@@ -246,10 +259,13 @@ class MainWindow(QMainWindow):
                                             QMessageBox.Ok)
                     else:
                         if response.tles:
-                            self.user_db_win = UserDbWindow(response.tles)
+                            lines = response.tles.splitlines()
+                            new_lines = [x for y in (lines[i:i + 3] + ['\n'] * (i < len(lines) - 2) for i in
+                                                     range(0, len(lines), 3)) for x in y]
+                            new_str = '\n'.join(new_lines)
+                            self.user_db_win = UserDbWindow(new_str)
                             self.user_db_win.show()
                             self.user_db_win.centerize(self)
-                            # self.tle_list_widget.update_list()
                         else:
                             QMessageBox.warning(self, "usr_tle_client",
                                                 "Cannot show user db (it may be empty).",
@@ -411,9 +427,9 @@ class MainWindow(QMainWindow):
 
     def predict_btn_clicked(self):
         if self.tle_list_widget.selectedIndexes():
+            self.prediction_window.set_idx(self.tle_list_widget.selectedIndexes()[0].row())
             self.prediction_window.centerize(self)
             self.prediction_window.show()
-            # self.prediction_window.set_idx(self.tle_list_widget.selectedIndexes()[0].row())
         else:
             QMessageBox.information(self, "Prediction", "Select satellite first!", QMessageBox.Ok)
 
@@ -448,6 +464,8 @@ class MainWindow(QMainWindow):
         self.statusBar().addPermanentWidget(VLine())
 
     def update_clock_lbl(self, ts):
+        if self.server_error_box:
+            self.server_error_box.close()
         timestamp = datetime.datetime.fromtimestamp(float(ts))
         self.clock_lbl.setText(timestamp.strftime('%Y-%m-%d %H:%M:%S'))
         self.timer_signal.emit()
@@ -466,10 +484,10 @@ class MainWindow(QMainWindow):
         self.parameters_window.show()
 
     def set_active_btn_clicked(self):
-        if self.tle_list_widget.selectedIndexes() or (self.set_active_btn.text() == "Stop following"):
+        if self.tle_list_widget.selectedIndexes() or (self.set_active_btn.text() == "Stop Tracking"):
             if srv_ready(subs_and_clients.sat_set_active_client):
                 req = SatsActiveSet.Request()
-                req.is_on = (self.set_active_btn.text() == "Follow")
+                req.is_on = (self.set_active_btn.text() == "Track")
 
                 if req.is_on:
                     self.rid = self.tle_list_widget.selectedItems()[0]
@@ -482,24 +500,24 @@ class MainWindow(QMainWindow):
                         try:
                             response = future.result()
                         except Exception as e:
-                            QMessageBox.warning(self, "sat_set_active_client", "Cannot follow satellite.\n"
+                            QMessageBox.warning(self, "sat_set_active_client", "Cannot track satellite.\n"
                                                                                "Stacktrace: {}".format(e),
                                                 QMessageBox.Ok)
                         else:
                             if response.res:
-                                if self.set_active_btn.text() == "Follow":
-                                    self.set_active_btn.setText("Stop following")
+                                if self.set_active_btn.text() == "Track":
+                                    self.set_active_btn.setText("Stop Tracking")
                                     self.rid.setBackground(QColor("#9ee99e"))
                                     self.antenna_graph_widget.is_tracking = True
                                 else:
-                                    self.set_active_btn.setText("Follow")
+                                    self.set_active_btn.setText("Track")
                                     self.rid.setBackground(self.background_color)
                                     self.antenna_graph_widget.is_tracking = False
                                     # self.antenna_graph_widget.clear_sat_data()
                                     self.antenna_pose_widget.clear_labels()
                                     subs_and_clients.sat_azs, subs_and_clients.sat_els = [], []
                             else:
-                                QMessageBox.warning(self, "sat_set_active_client", "Cannot follow satellite.",
+                                QMessageBox.warning(self, "sat_set_active_client", "Cannot Track satellite.",
                                                     QMessageBox.Ok)
                         break
         else:
@@ -574,7 +592,7 @@ class MainWindow(QMainWindow):
                                 if int(self.tle_list_widget.item(i).statusTip()) == response.id:
                                     self.rid = self.tle_list_widget.item(i)
                                     self.tle_list_widget.item(i).setBackground(QColor("#9ee99e"))
-                                    self.set_active_btn.setText("Stop following")
+                                    self.set_active_btn.setText("Stop Tracking")
                                     self.antenna_graph_widget.is_tracking = True
                     break
 
