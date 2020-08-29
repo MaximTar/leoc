@@ -37,6 +37,8 @@ class AntennaPoseWidget(QGroupBox):
 
         self.diff_az_label = QLabel("", self)
         self.diff_el_label = QLabel("", self)
+        self.diff_az_label.setStyleSheet('color: blue')
+        self.diff_el_label.setStyleSheet('color: magenta')
 
         # fourth column
         main_layout.addWidget(QLabel("Diff", self), 0, 6)

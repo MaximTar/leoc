@@ -10,7 +10,7 @@ import datetime
 # noinspection PyUnresolvedReferences
 class SubscribersAndClients(Node):
 
-    def __init__(self, main_window=None):
+    def __init__(self):
         super().__init__('subs_and_clients')
 
         self.sat_graph_slot = None
@@ -48,6 +48,7 @@ class SubscribersAndClients(Node):
         self.sys_log_client = self.create_client(SysLog, '/antenna/sys/log')
         self.sys_auth_client = self.create_client(SysAuth, '/antenna/sys/auth')
         self.sys_deauth_client = self.create_client(SysDeauth, '/antenna/sys/deauth')
+        self.mcu_reset_client = self.create_client(McuReset, '/antenna/mcu/reset')
 
         # user data
         self.usr_tle_set_client = self.create_client(TlesUserSet, '/antenna/tles/user/set')
@@ -67,13 +68,6 @@ class SubscribersAndClients(Node):
         self.params_info_client = self.create_client(ParamsInfo, '/antenna/params/info')
         self.params_client = self.create_client(Params, '/antenna/params')
         self.params_set_client = self.create_client(ParamsSet, '/antenna/params/set')
-
-        # self.heartbeat_timer = QTimer()
-        # self.heartbeat_timer.timeout.connect(self.show_server_error)
-        # self.main_window = main_window
-
-    # def show_server_error(self):
-    #     QMessageBox.critical(None, "ERROR", "Lost server connection", QMessageBox.Ok)
 
     def _active_satellite_state_cb(self, msg):
         self.sat_lat = msg.lat
@@ -121,8 +115,10 @@ class SubscribersAndClients(Node):
         if self.sat_ant_vel_slot:
             self.sat_ant_vel_slot(ant_vel=(self.ant_azv, self.ant_elv))
 
+        if self.status_slot:
+            self.status_slot(f'{self.ant_err_state:014b}'[::-1])
+
     def _heartbeat_cb(self, msg):
-        # self.heartbeat_timer.start(2000)
         self.ts = msg.ts
         if self.clock_slot:
             self.clock_slot(self.ts)
@@ -144,7 +140,3 @@ class SubscribersAndClients(Node):
 
     def set_clock_slot(self, clock_slot):
         self.clock_slot = clock_slot
-
-    def handle_error_state(self):
-        if self.status_slot:
-            self.status_slot(f'{self.ant_err_state:014b}'[::-1])

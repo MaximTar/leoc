@@ -46,7 +46,8 @@ class PredictionWindow(QMainWindow):
             # noinspection PyBroadException
             try:
                 predictions = orb.get_next_passes(utc_time=(now + datetime.timedelta(hours=int(input_arr[0]))),
-                                                  length=int(input_arr[1]), lon=37.521575, lat=55.928975, alt=197.,
+                                                  length=int(input_arr[1]), lon=37.521575, lat=55.928975,
+                                                  alt=194. + 48.,
                                                   tol=0.001, horizon=float(input_arr[2]))
                 table_widget.setColumnCount(4)
                 rows = len(predictions)

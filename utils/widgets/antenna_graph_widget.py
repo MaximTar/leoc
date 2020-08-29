@@ -58,7 +58,8 @@ class AntennaGraphWidget(QWidget):
             self.sat_point.setData([x[-1]], [y[-1]])
 
     def update_ant_graph(self, azimuth, elevation):
-        if self.is_tracking and azimuth and elevation:
+        # if self.is_tracking and azimuth and elevation:
+        if azimuth and elevation:
             azimuth = np.array(azimuth) - 90.
             elevation = np.abs(np.array(elevation) - 90.)
             x = elevation * np.cos(np.deg2rad(-azimuth))

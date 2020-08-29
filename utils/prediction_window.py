@@ -37,18 +37,29 @@ class PredictionWindow(QMainWindow):
                             rows = len(response.r_stamps)
                             table_widget.setRowCount(rows)
                             table_widget.setHorizontalHeaderLabels(["Rise", "Fall", "Max elevation"])
-                            table_widget.horizontalHeaderItem(0).setToolTip("UTC time")
-                            table_widget.horizontalHeaderItem(1).setToolTip("UTC time")
-                            table_widget.horizontalHeaderItem(2).setToolTip("UTC time")
+                            # table_widget.horizontalHeaderItem(0).setToolTip("UTC time")
+                            # table_widget.horizontalHeaderItem(1).setToolTip("UTC time")
+                            # table_widget.horizontalHeaderItem(2).setToolTip("UTC time")
                             for i in range(0, rows):
+                                # r_item = QTableWidgetItem(
+                                #     datetime.datetime.utcfromtimestamp(response.r_stamps[i]).strftime(
+                                #         "%d.%m.%Y %H:%M:%S"))
                                 r_item = QTableWidgetItem(
-                                    datetime.datetime.fromtimestamp(response.r_stamps[i]).strftime("%d.%m.%Y %H:%M:%S"))
+                                    datetime.datetime.fromtimestamp(response.r_stamps[i]).strftime(
+                                        "%d.%m.%Y %H:%M:%S"))
                                 r_item.setFlags(Qt.ItemIsEditable)
                                 table_widget.setItem(i, 0, r_item)
+                                # f_item = QTableWidgetItem(
+                                #     datetime.datetime.utcfromtimestamp(response.f_stamps[i]).strftime(
+                                #         "%d.%m.%Y %H:%M:%S"))
                                 f_item = QTableWidgetItem(
-                                    datetime.datetime.fromtimestamp(response.f_stamps[i]).strftime("%d.%m.%Y %H:%M:%S"))
+                                    datetime.datetime.fromtimestamp(response.f_stamps[i]).strftime(
+                                        "%d.%m.%Y %H:%M:%S"))
                                 f_item.setFlags(Qt.ItemIsEditable)
                                 table_widget.setItem(i, 1, f_item)
+                                # me_item = QTableWidgetItem(
+                                #     datetime.datetime.utcfromtimestamp(response.me_stamps[i]).strftime(
+                                #         "%d.%m.%Y %H:%M:%S"))
                                 me_item = QTableWidgetItem(
                                     datetime.datetime.fromtimestamp(response.me_stamps[i]).strftime(
                                         "%d.%m.%Y %H:%M:%S"))

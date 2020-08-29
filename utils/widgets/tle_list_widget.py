@@ -82,6 +82,7 @@ class TleListWidget(QListWidget):
                         QMessageBox.warning(self, "sat_names_client", "Cannot update TLE list.\n"
                                                                       "Stacktrace: {}".format(e), QMessageBox.Ok)
                     else:
+                        # print(response)
                         for i, name in zip(response.ids, response.names):
                             item = QListWidgetItem(name)
                             item.setStatusTip(str(i))

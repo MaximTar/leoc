@@ -27,7 +27,7 @@ from utils.widgets.tle_list_widget import TleListWidget
 from utils.widgets.velocity_diff_graph_widget import VelocityDiffGraphWidget
 
 
-# TODO 7 velocities + graph (admin)
+# TODO GRAPH UPDATE FROM ANOTHER THREAD (SIGNAL-SLOT)
 # import sys  # Suppressing the error messages
 #
 #
@@ -53,15 +53,12 @@ class MainWindow(QMainWindow):
         # TODO MAKE FUNCTIONAL TO RELOGIN
 
         self.timestamp = None
-        self.login_widget = LoginWidget(subs_and_clients)
-        # self.login_widget.show()
+        self.login_widget = LoginWidget(subs_and_clients, prnt=self)
+        self.login_widget.show()
 
         self.icon_ok = QIcon(os.path.dirname(os.path.abspath(__file__)) + "/resources/icons/status_ok.png")
         self.icon_fail = QIcon(os.path.dirname(os.path.abspath(__file__)) + "/resources/icons/status_fail.png")
         self.background_color = QColor("#fcfcfc")
-
-        main_hbox = QHBoxLayout()
-        main_hbox.setContentsMargins(10, 10, 10, 0)
 
         self.set_active_btn = QPushButton("Track", self)
         self.set_active_btn.setToolTip("Track satellite")
@@ -79,8 +76,7 @@ class MainWindow(QMainWindow):
         self.parameters_window = ParametersWindow(subs_and_clients, parent=self)
 
         self.map_widget = MapWidget(settings_window=self.settings_window, ts=self.timestamp)
-        self.tle_list_widget = TleListWidget(subs_and_clients, parent_slot=self.update_map_widget,
-                                             data_slot=self.update_sat_data)
+
         self.satellite_data_widget = SatelliteDataWidget(settings=self.settings)
         self.antenna_graph_widget = AntennaGraphWidget()
         self.pose_graph_widget = PoseDiffGraphWidget()
@@ -95,39 +91,11 @@ class MainWindow(QMainWindow):
         # self.antenna_time_widget = AntennaTimeWidget(dt_slot=self.set_dt)
         self.antenna_video_widget = AntennaVideoWidget(self.settings)
 
-        self.map_widget.set_uncheck_list_and_slot(self.tle_list_widget.checked_indices_list,
-                                                  self.tle_list_widget.uncheck_item)
-
-        get_tles(self.tle_list_widget, subs_and_clients)
-
         self.dt = None
 
-        splitter = QSplitter(Qt.Horizontal)
-
-        lw = self.construct_left_widget()
-        lw.setMinimumSize(250, 400)
-        splitter.addWidget(lw)
-        mw = self.map_widget
-        splitter.addWidget(mw)
-        rw = self.construct_right_widget()
-        rw.setMinimumSize(250, 400)
-        splitter.addWidget(rw)
-
-        splitter.setSizes([0, 640, 0])
-        main_hbox.addWidget(splitter)
-
-        # noinspection PyArgumentList
-        central_widget = QWidget()
-        central_widget.setLayout(main_hbox)
-        self.setCentralWidget(central_widget)
-
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.update_map_widget)
-        self.timer.timeout.connect(self.update_sat_data)
-        self.timer.start(int(self.settings.value("general_settings/map_update_period", 1000)))
+        # self.construct_widgets()
 
         self.rid = None
-        self.check_active_satellite()
         subs_and_clients.set_sat_graph_slot(self.antenna_graph_widget.update_sat_graph)
         subs_and_clients.set_ant_graph_slot(self.antenna_graph_widget.update_ant_graph)
         subs_and_clients.set_ant_pose_slot(self.antenna_pose_widget.update_pose)
@@ -139,13 +107,66 @@ class MainWindow(QMainWindow):
         self.timer_signal.connect(self.start_heartbeat_timer)
         self.clock_lbl = QLabel()
         self.status_combo_box = QComboBox(self)
-        self.create_status_bar()
+        # self.create_status_bar()
         subs_and_clients.set_clock_slot(self.update_clock_lbl)
         self.heartbeat_timer = QTimer()
         self.heartbeat_timer.timeout.connect(self.show_server_error)
 
         self.user_db_win = UserDbWindow()
         self.server_error_box = None
+
+    def after_login(self):
+        self.tle_list_widget = TleListWidget(subs_and_clients, parent_slot=self.update_map_widget,
+                                             data_slot=self.update_sat_data)
+        self.map_widget.set_uncheck_list_and_slot(self.tle_list_widget.checked_indices_list,
+                                                  self.tle_list_widget.uncheck_item)
+        self.check_active_satellite()
+
+        get_tles(self.tle_list_widget, subs_and_clients, on_startup=True)
+
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.update_map_widget)
+        self.timer.timeout.connect(self.update_sat_data)
+        self.timer.start(int(self.settings.value("general_settings/map_update_period", 1000)))
+
+    def construct_widgets(self, is_admin=False):
+        main_hbox = QHBoxLayout()
+        main_hbox.setContentsMargins(10, 10, 10, 0)
+
+        splitter = QSplitter(Qt.Horizontal)
+
+        lw = self.construct_left_widget()
+        lw.setMinimumSize(250, 400)
+        splitter.addWidget(lw)
+
+        cw = self.construct_central_widget(is_admin)
+        splitter.addWidget(cw)
+
+        rw = self.construct_right_widget(is_admin)
+        rw.setMinimumSize(250, 400)
+        splitter.addWidget(rw)
+
+        splitter.setSizes([0, 640, 0])
+        main_hbox.addWidget(splitter)
+
+        # noinspection PyArgumentList
+        central_widget = QWidget()
+        central_widget.setLayout(main_hbox)
+        self.setCentralWidget(central_widget)
+
+    def construct_central_widget(self, is_admin=False):
+        splitter = QSplitter(Qt.Vertical)
+        mw = self.map_widget
+        splitter.addWidget(mw)
+
+        if is_admin:
+            splitter.addWidget(self.pose_graph_widget)
+            splitter.addWidget(self.velocity_graph_widget)
+            splitter.setStretchFactor(0, 100)
+            splitter.setStretchFactor(1, 1)
+            splitter.setStretchFactor(2, 1)
+
+        return splitter
 
     @pyqtSlot()
     def start_heartbeat_timer(self):
@@ -159,7 +180,12 @@ class MainWindow(QMainWindow):
         self.server_error_box.setWindowTitle("ERROR")
         self.server_error_box.setText("Lost server connection")
         self.server_error_box.setStandardButtons(QMessageBox.Ok)
-        self.server_error_box.show()
+        ca_btn = QPushButton("Close app")
+        self.server_error_box.addButton(ca_btn, QMessageBox.ActionRole)
+        self.server_error_box.exec()
+        if self.server_error_box.clickedButton() == ca_btn:
+            self.close()
+            sys.exit()
 
     def update_timer(self):
         self.timer.start(int(self.settings.value("general_settings/map_update_period", 1000)))
@@ -193,15 +219,12 @@ class MainWindow(QMainWindow):
 
         splitter = QSplitter(Qt.Vertical)
         splitter.setStretchFactor(1, 1)
-        splitter.addWidget(self.antenna_control_widget)
         splitter.addWidget(clear_graphs_btn)
         splitter.addWidget(self.antenna_graph_widget)
-        if self.login_widget.is_admin:
-            splitter.addWidget(self.pose_graph_widget)
+
         splitter.addWidget(self.antenna_pose_widget)
-        if self.login_widget.is_admin:
-            splitter.addWidget(self.velocity_graph_widget)
-            splitter.addWidget(self.antenna_velocities_widget)
+        splitter.addWidget(self.antenna_velocities_widget)
+
         splitter.addWidget(self.antenna_adjustment_widget)
         splitter.addWidget(self.antenna_video_widget)
         return splitter
@@ -212,12 +235,14 @@ class MainWindow(QMainWindow):
         self.antenna_pose_widget.clear_data()
         self.antenna_velocities_widget.clear_data()
 
-    def construct_right_widget(self):
+    def construct_right_widget(self, is_admin=False):
         right_widget = QWidget()
         right_vbox = QVBoxLayout()
         right_vbox.setContentsMargins(5, 10, 10, 0)
         btn_widget = QWidget()
+        two_btn_widget = QWidget()
         btn_grid = QGridLayout()
+        two_btn_grid = QGridLayout()
 
         add_btn = QPushButton("Add", self)
         add_btn.setToolTip("Add TLE to the list")
@@ -248,19 +273,111 @@ class MainWindow(QMainWindow):
 
         btn_widget.setLayout(btn_grid)
 
+        home_btn = QPushButton("Home", self)
+        # home_btn.setToolTip("Add TLE to the list")
+        home_btn.clicked.connect(self.home_btn_clicked)
+        two_btn_grid.addWidget(home_btn, 0, 0, 1, 10)
+
+        # stop_btn = QPushButton("Stop", self)
+        # home_btn.setToolTip("Add TLE to the list")
+        # stop_btn.clicked.connect(self.stop_btn_clicked)
+        # two_btn_grid.addWidget(stop_btn, 0, 10, 1, 10)
+
+        if is_admin:
+            reset_btn = QPushButton("Reset", self)
+            # reset_btn.setToolTip("Remove TLE from the list")
+            reset_btn.clicked.connect(self.reset_btn_clicked)
+            two_btn_grid.addWidget(reset_btn, 0, 20, 1, 10)
+        two_btn_widget.setLayout(two_btn_grid)
+
         splitter = QSplitter(Qt.Vertical)
+        splitter.addWidget(two_btn_widget)
+        splitter.addWidget(self.antenna_control_widget)
+        splitter.addWidget(btn_widget)
         splitter.addWidget(self.tle_list_widget)
         scroll_area = QScrollArea()
         scroll_area.setWidget(self.satellite_data_widget)
         splitter.addWidget(scroll_area)
 
-        splitter.setStretchFactor(0, 9)
-        splitter.setStretchFactor(1, 1)
+        splitter.setStretchFactor(2, 8)
+        splitter.setStretchFactor(3, 2)
 
         right_vbox.addWidget(splitter)
-        right_vbox.addWidget(btn_widget)
+        # right_vbox.addWidget(btn_widget)
         right_widget.setLayout(right_vbox)
         return right_widget
+
+    def home_btn_clicked(self):
+        if srv_ready(subs_and_clients.params_set_client):
+            req = ParamsSet.Request()
+            req.names = ["op_mode"]
+            req.values = ["3"]
+            future = subs_and_clients.params_set_client.call_async(req)
+            while rclpy.ok():
+                # TODO LOADING
+                if future.done():
+                    try:
+                        response = future.result()
+                    except Exception as e:
+                        QMessageBox.warning(self, "params_set_client",
+                                            "Cannot change parameters.\n"
+                                            "Stacktrace: {}".format(e),
+                                            QMessageBox.Ok)
+                    else:
+                        if response.res:
+                            QMessageBox.information(self, "params_set_client",
+                                                    "Antenna moves to home position.",
+                                                    QMessageBox.Ok)
+                        else:
+                            QMessageBox.warning(self, "params_set_client",
+                                                "Cannot change parameters.", QMessageBox.Ok)
+                    break
+
+    def stop_btn_clicked(self):
+        if srv_ready(subs_and_clients.params_set_client):
+            req = ParamsSet.Request()
+            req.names = ["op_mode"]
+            req.values = ["0"]
+            future = subs_and_clients.params_set_client.call_async(req)
+            while rclpy.ok():
+                # TODO LOADING
+                if future.done():
+                    try:
+                        response = future.result()
+                    except Exception as e:
+                        QMessageBox.warning(self, "params_set_client", "Cannot stop antenna.\n"
+                                                                       "Stacktrace: {}".format(e), QMessageBox.Ok)
+                    else:
+                        if response.res:
+                            QMessageBox.information(self, "params_set_client", "Antenna stopped", QMessageBox.Ok)
+                        else:
+                            QMessageBox.warning(self, "params_set_client", "Cannot stop antenna", QMessageBox.Ok)
+
+                    break
+
+    def reset_btn_clicked(self):
+        if srv_ready(subs_and_clients.mcu_reset_client):
+            req = McuReset.Request()
+            future = subs_and_clients.mcu_reset_client.call_async(req)
+            while rclpy.ok():
+                # TODO LOADING
+                if future.done():
+                    try:
+                        response = future.result()
+                    except Exception as e:
+                        QMessageBox.warning(self, "mcu_reset_client", "Cannot show user db.\n"
+                                                                      "Stacktrace: {}".format(e),
+                                            QMessageBox.Ok)
+                    else:
+                        if response.res:
+                            QMessageBox.information(self, "mcu_reset_client",
+                                                    "MCU reset successful.",
+                                                    QMessageBox.Ok)
+                        else:
+                            QMessageBox.warning(self, "mcu_reset_client",
+                                                "Cannot reset MCU.",
+                                                QMessageBox.Ok)
+                    break
 
     def show_db_btn_clicked(self):
         if srv_ready(subs_and_clients.usr_tle_client):
@@ -322,6 +439,7 @@ class MainWindow(QMainWindow):
                             else:
                                 if response.res:
                                     self.tle_list_widget.update_list()
+                                    get_tles(self.tle_list_widget, subs_and_clients)
                                 else:
                                     QMessageBox.warning(self, "sat_add_client",
                                                         "Cannot add satellite {} to list.".format(req.num),
@@ -346,6 +464,7 @@ class MainWindow(QMainWindow):
                             else:
                                 if response.res:
                                     self.tle_list_widget.update_list()
+                                    get_tles(self.tle_list_widget, subs_and_clients)
                                 else:
                                     QMessageBox.warning(self, "sat_add_client",
                                                         "Cannot add satellite {} to list.".format(req.name),
@@ -451,7 +570,7 @@ class MainWindow(QMainWindow):
         else:
             QMessageBox.information(self, "Prediction", "Select satellite first!", QMessageBox.Ok)
 
-    def create_status_bar(self):
+    def create_status_bar(self, is_admin=False):
         # self.statusBar().showMessage("")
         status_lbl = QLabel("Status: ")
 
@@ -467,7 +586,7 @@ class MainWindow(QMainWindow):
 
         self.statusBar().setStyleSheet("QStatusBar {border: 0; background-color: #FFF8DC;}")
 
-        if self.login_widget.is_admin:
+        if is_admin:
             settings_btn = QPushButton("", self)
             settings_btn.setIcon(QIcon(os.path.dirname(os.path.abspath(__file__)) + "/resources/icons/settings.png"))
             settings_btn.setIconSize(QSize(20, 20))
@@ -485,6 +604,7 @@ class MainWindow(QMainWindow):
         if self.server_error_box:
             self.server_error_box.close()
         self.timestamp = ts
+        # date_time = datetime.datetime.utcfromtimestamp(float(ts))
         date_time = datetime.datetime.fromtimestamp(float(ts))
         self.clock_lbl.setText(date_time.strftime('%Y-%m-%d %H:%M:%S'))
         self.timer_signal.emit()
@@ -504,9 +624,12 @@ class MainWindow(QMainWindow):
 
     def set_active_btn_clicked(self):
         if self.tle_list_widget.selectedIndexes() or (self.set_active_btn.text() == "Stop Tracking"):
+
+            to_track = (self.set_active_btn.text() == "Track")
+
             if srv_ready(subs_and_clients.sat_set_active_client):
                 req = SatsActiveSet.Request()
-                req.is_on = (self.set_active_btn.text() == "Track")
+                req.is_on = to_track
 
                 if req.is_on:
                     self.rid = self.tle_list_widget.selectedItems()[0]
@@ -519,31 +642,93 @@ class MainWindow(QMainWindow):
                         try:
                             response = future.result()
                         except Exception as e:
-                            QMessageBox.warning(self, "sat_set_active_client", "Cannot track satellite.\n"
-                                                                               "Stacktrace: {}".format(e),
+                            QMessageBox.warning(self, "sat_set_active_client",
+                                                "Cannot track satellite.\n"
+                                                "Stacktrace: {}".format(e),
                                                 QMessageBox.Ok)
                         else:
                             if response.res:
-                                if self.set_active_btn.text() == "Track":
-                                    self.set_active_btn.setText("Stop Tracking")
-                                    self.rid.setBackground(QColor("#9ee99e"))
-                                    self.antenna_graph_widget.is_tracking = True
-                                else:
-                                    self.set_active_btn.setText("Track")
-                                    self.rid.setBackground(self.background_color)
-                                    self.antenna_graph_widget.is_tracking = False
-                                    self.antenna_pose_widget.clear_labels()
-                                    self.antenna_velocities_widget.clear_labels()
-                                    subs_and_clients.sat_azs, subs_and_clients.sat_els = [], []
-                                    subs_and_clients.ant_azs, subs_and_clients.ant_els = [], []
-                                    self.antenna_pose_widget.clear_data()
-                                    self.antenna_velocities_widget.clear_data()
+                                # TODO func
+                                if srv_ready(subs_and_clients.params_set_client):
+                                    req = ParamsSet.Request()
+                                    req.names = ["op_mode"]
+                                    req.values = ["1"] if to_track else ["0"]
+                                    future = subs_and_clients.params_set_client.call_async(req)
+                                    while rclpy.ok():
+                                        # TODO LOADING
+                                        if future.done():
+                                            try:
+                                                response = future.result()
+                                            except Exception as e:
+                                                QMessageBox.warning(self, "params_set_client",
+                                                                    "Cannot change parameters.\n"
+                                                                    "Stacktrace: {}".format(e), QMessageBox.Ok)
+                                            else:
+                                                if response.res:
+                                                    if self.set_active_btn.text() == "Track":
+                                                        self.set_active_btn.setText("Stop Tracking")
+                                                        self.rid.setBackground(QColor("#9ee99e"))
+                                                        self.antenna_graph_widget.is_tracking = True
+                                                    else:
+                                                        self.set_active_btn.setText("Track")
+                                                        self.rid.setBackground(self.background_color)
+                                                        self.antenna_graph_widget.is_tracking = False
+                                                        self.antenna_pose_widget.clear_labels()
+                                                        self.antenna_velocities_widget.clear_labels()
+                                                        subs_and_clients.sat_azs, subs_and_clients.sat_els = [], []
+                                                        subs_and_clients.ant_azs, subs_and_clients.ant_els = [], []
+                                                        self.antenna_pose_widget.clear_data()
+                                                        self.antenna_velocities_widget.clear_data()
+                                                else:
+                                                    QMessageBox.warning(self, "params_set_client",
+                                                                        "Cannot change parameters.",
+                                                                        QMessageBox.Ok)
+                                            break
+
                             else:
-                                QMessageBox.warning(self, "sat_set_active_client", "Cannot Track satellite.",
+                                QMessageBox.warning(self, "sat_set_active_client",
+                                                    "Cannot track satellite.",
                                                     QMessageBox.Ok)
                         break
+
+            # elif srv_ready(subs_and_clients.params_set_client):
+            #     req = ParamsSet.Request()
+            #     req.names = ["op_mode"]
+            #     req.values = ["1"] if to_track else ["0"]
+            #     future = subs_and_clients.params_set_client.call_async(req)
+            #     while rclpy.ok():
+            #         # TODO LOADING
+            #         if future.done():
+            #             try:
+            #                 response = future.result()
+            #             except Exception as e:
+            #                 QMessageBox.warning(self, "params_set_client",
+            #                                     "Cannot change parameters.\n"
+            #                                     "Stacktrace: {}".format(e), QMessageBox.Ok)
+            #             else:
+            #                 if response.res:
+            #                     if self.set_active_btn.text() == "Track":
+            #                         self.set_active_btn.setText("Stop Tracking")
+            #                         self.rid.setBackground(QColor("#9ee99e"))
+            #                         self.antenna_graph_widget.is_tracking = True
+            #                     else:
+            #                         self.set_active_btn.setText("Track")
+            #                         self.rid.setBackground(self.background_color)
+            #                         self.antenna_graph_widget.is_tracking = False
+            #                         self.antenna_pose_widget.clear_labels()
+            #                         self.antenna_velocities_widget.clear_labels()
+            #                         subs_and_clients.sat_azs, subs_and_clients.sat_els = [], []
+            #                         subs_and_clients.ant_azs, subs_and_clients.ant_els = [], []
+            #                         self.antenna_pose_widget.clear_data()
+            #                         self.antenna_velocities_widget.clear_data()
+            #                 else:
+            #                     QMessageBox.warning(self, "params_set_client",
+            #                                         "Cannot change parameters.",
+            #                                         QMessageBox.Ok)
+            #                 break
+
         else:
-            QMessageBox.information(self, "Prediction", "Select satellite first!", QMessageBox.Ok)
+            QMessageBox.information(self, "Tracking", "Select satellite first!", QMessageBox.Ok)
 
     def update_settings(self):
         self.update_timer()
@@ -628,6 +813,6 @@ if __name__ == "__main__":
     spin_thread.start()
 
     main = MainWindow()
-    main.show()
+    # main.show()
 
     sys.exit(app.exec_())

@@ -33,6 +33,8 @@ class AntennaVelocitiesWidget(QGroupBox):
 
         self.diff_azv_label = QLabel("", self)
         self.diff_elv_label = QLabel("", self)
+        self.diff_azv_label.setStyleSheet('color: blue')
+        self.diff_elv_label.setStyleSheet('color: magenta')
 
         # fourth column
         main_layout.addWidget(QLabel("Diff", self), 0, 6)

@@ -6,6 +6,8 @@ from antenna_interfaces.srv import Params, ParamsInfo, ParamsSet
 
 from utils.srv_client_handler import srv_ready
 
+pass_args = 0
+
 
 # noinspection PyUnresolvedReferences
 class ParametersWindow(QMainWindow):
@@ -30,29 +32,37 @@ class ParametersWindow(QMainWindow):
                         table_widget.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
                     else:
                         if response.names:
-                            self.names = response.names
+                            self.names = response.names[pass_args:]
+                            types = response.types[pass_args:]
+                            descs = response.descs[pass_args:]
                             table_widget = QWidget(self)
                             table_layout = QVBoxLayout()
                             self.inner_table_widget = QTableWidget(self)
                             self.inner_table_widget.setColumnCount(4)
-                            n_rows = len(response.names)
+                            # n_rows = len(response.names)
+                            n_rows = len(self.names)
                             self.inner_table_widget.setRowCount(n_rows)
                             self.inner_table_widget.setHorizontalHeaderLabels(["Name", "Type", "Value", "Description"])
                             for i in range(0, n_rows):
-                                n_item = QTableWidgetItem(response.names[i])
-                                t_item = QTableWidgetItem(response.types[i])
-                                if response.types[i] == 'uint8':
+                                # n_item = QTableWidgetItem(response.names[i])
+                                n_item = QTableWidgetItem(self.names[i])
+                                # t_item = QTableWidgetItem(response.types[i])
+                                t_item = QTableWidgetItem(types[i])
+                                if types[i] == 'uint8':
                                     v_item = QSpinBox(self)
+                                    v_item.setMinimum(-255)
                                     v_item.setMaximum(255)
-                                elif response.types[i] == 'uint16':
+                                elif types[i] == 'uint16':
                                     v_item = QSpinBox(self)
+                                    v_item.setMinimum(-65535)
                                     v_item.setMaximum(65535)
-                                elif response.types[i] == 'float':
+                                elif types[i] == 'float':
                                     v_item = QDoubleSpinBox(self)
-                                    v_item.setMaximum(360)
+                                    v_item.setMinimum(-1000)
+                                    v_item.setMaximum(1000)
                                 else:
                                     v_item = QLabel("Call admin")
-                                d_item = QTableWidgetItem(response.descs[i])
+                                d_item = QTableWidgetItem(descs[i])
                                 n_item.setFlags(Qt.ItemIsEditable)
                                 t_item.setFlags(Qt.ItemIsEditable)
                                 d_item.setFlags(Qt.ItemIsEditable)
@@ -98,10 +108,14 @@ class ParametersWindow(QMainWindow):
                                                                        "Stacktrace: {}".format(e), QMessageBox.Ok)
                         else:
                             if response.names:
-                                n_rows = len(response.names)
+                                names = response.names[pass_args:]
+                                values = response.values[pass_args:]
+                                # n_rows = len(response.names)
+                                n_rows = len(names)
                                 for i in range(0, n_rows):
                                     v_item = self.inner_table_widget.cellWidget(i, 2)
-                                    v = response.values[i]
+                                    # v = response.values[i]
+                                    v = values[i]
                                     v = '0' if v == '' else v
                                     v_item.setValue(float(v))
                         break
@@ -126,7 +140,6 @@ class ParametersWindow(QMainWindow):
                     else:
                         if response.res:
                             self.close()
-                            pass
                         else:
                             QMessageBox.warning(self, "params_set_client", "Cannot change parameters.", QMessageBox.Ok)
                     break

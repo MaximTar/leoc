@@ -24,7 +24,7 @@ class AntennaControlWidget(QGroupBox):
         self.azimuth_spinbox.setSingleStep(0.01)
 
         self.elevation_spinbox = QDoubleSpinBox(self)
-        self.elevation_spinbox.setRange(0, 90)
+        self.elevation_spinbox.setRange(0, 180)
         self.elevation_spinbox.setSingleStep(0.01)
 
         set_btn = QPushButton("Set", self)
@@ -38,10 +38,27 @@ class AntennaControlWidget(QGroupBox):
         self.setLayout(main_layout)
 
     def set_btn_clicked(self):
+
+        # if srv_ready(self.subs_and_clients.params_set_client):
+        #     req = ParamsSet.Request()
+        #     req.names = ["op_mode"]
+        #     req.values = ["0"]
+        #     future = self.subs_and_clients.params_set_client.call_async(req)
+        #     while rclpy.ok():
+        #         # TODO LOADING
+        #         if future.done():
+        #             try:
+        #                 response = future.result()
+        #             except Exception as e:
+        #                 QMessageBox.warning(self, "params_set_client 1", "Cannot change parameters.\n"
+        #                                                                  "Stacktrace: {}".format(e), QMessageBox.Ok)
+        #             else:
+        #                 if response.res:
+
         if srv_ready(self.subs_and_clients.params_set_client):
             req = ParamsSet.Request()
-            req.names = ["t_az", "t_el"]
-            req.values = [str(self.azimuth_spinbox.value()), str(self.elevation_spinbox.value())]
+            req.names = ["op_mode"]
+            req.values = ["2"]
             future = self.subs_and_clients.params_set_client.call_async(req)
             while rclpy.ok():
                 # TODO LOADING
@@ -49,15 +66,48 @@ class AntennaControlWidget(QGroupBox):
                     try:
                         response = future.result()
                     except Exception as e:
-                        QMessageBox.warning(self, "params_set_client", "Cannot change parameters.\n"
-                                                                       "Stacktrace: {}".format(e), QMessageBox.Ok)
+                        QMessageBox.warning(self, "params_set_client 2",
+                                            "Cannot change parameters.\n"
+                                            "Stacktrace: {}".format(e),
+                                            QMessageBox.Ok)
                     else:
                         if response.res:
-                            QMessageBox.information(self, "params_set_client",
-                                                    "Antenna moves to ({}, {}) coordinates.".format(req.values[0],
-                                                                                                    req.values[1]),
-                                                    QMessageBox.Ok)
-                            pass
+                            # QMessageBox.information(self, "params_set_client",
+                            #                         "Changed antenna mode to SET_POINT.",
+                            #                         QMessageBox.Ok)
+                            if srv_ready(self.subs_and_clients.params_set_client):
+                                req = ParamsSet.Request()
+                                req.names = ["t_az", "t_el"]
+                                req.values = [str(self.azimuth_spinbox.value()),
+                                              str(self.elevation_spinbox.value())]
+                                future = self.subs_and_clients.params_set_client.call_async(req)
+                                while rclpy.ok():
+                                    # TODO LOADING
+                                    if future.done():
+                                        try:
+                                            response = future.result()
+                                        except Exception as e:
+                                            QMessageBox.warning(self, "params_set_client 3",
+                                                                "Cannot change parameters.\n"
+                                                                "Stacktrace: {}".format(e),
+                                                                QMessageBox.Ok)
+                                        else:
+                                            if response.res:
+                                                QMessageBox.information(self, "params_set_client",
+                                                                        "Antenna moves to ({}, {})"
+                                                                        " coordinates.".format(
+                                                                            req.values[0],
+                                                                            req.values[1]),
+                                                                        QMessageBox.Ok)
+                                            else:
+                                                QMessageBox.warning(self, "params_set_client 5",
+                                                                    "Cannot change parameters.",
+                                                                    QMessageBox.Ok)
+                                        break
                         else:
-                            QMessageBox.warning(self, "params_set_client", "Cannot change parameters.", QMessageBox.Ok)
+                            QMessageBox.warning(self, "params_set_client 6",
+                                                "Cannot change parameters.", QMessageBox.Ok)
                     break
+                #     break
+                # else:
+                #     QMessageBox.warning(self, "params_set_client 7", "Cannot change parameters.", QMessageBox.Ok)

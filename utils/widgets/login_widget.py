@@ -8,7 +8,7 @@ from utils.srv_client_handler import srv_ready
 
 # noinspection PyUnresolvedReferences
 class LoginWidget(QWidget):
-    def __init__(self, subs_and_clients):
+    def __init__(self, subs_and_clients, prnt=None):
         super().__init__()
         self.setWindowTitle('Login Form')
 
@@ -49,6 +49,8 @@ class LoginWidget(QWidget):
 
         self.centered_lbl_geometry, self.left_lbl_geometry, self.right_lbl_geometry = None, None, None
         self.animation = None
+
+        self.prnt = prnt
 
     def center(self):
         ag = QDesktopWidget().availableGeometry()
@@ -96,6 +98,11 @@ class LoginWidget(QWidget):
                         if response.res:
                             self.close()
                             self.is_admin = response.is_admin
+                            if self.prnt:
+                                self.prnt.after_login()
+                                self.prnt.construct_widgets(self.is_admin)
+                                self.prnt.create_status_bar(self.is_admin)
+                                self.prnt.show()
                         else:
                             self.line_edit_username.clear()
                             self.line_edit_password.clear()
