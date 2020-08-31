@@ -130,7 +130,7 @@ class SatelliteDataWidget(QWidget):
             lon, lat, alt = orb.get_lonlatalt(now)
             self.longitude_lbl.setText("{:.3f}".format(lon))
             self.latitude_lbl.setText("{:.3f}".format(lat))
-            self.altitude_lbl.setText("{:.3f}".format(alt))
+            self.altitude_lbl.setText("{:.3f}".format(alt / 1000.))
         except Exception:
             self.longitude_lbl.setText("No data")
             self.latitude_lbl.setText("No data")
