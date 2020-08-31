@@ -49,7 +49,7 @@ class VelocityDiffGraphWidget(QWidget):
             y = azv_diff
             x = list(range(len(y)))
             self.azv_data.setData(x, y)
-            self.azv_point.setData([len(azv_diff)], [azv_diff[-1]])
+            self.azv_point.setData([float(len(azv_diff))], [azv_diff[-1]])
         if elv_diff:
             if len(elv_diff) > 600:
                 elv_diff = elv_diff[-600:]

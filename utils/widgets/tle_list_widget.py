@@ -32,7 +32,7 @@ class TleListWidget(QListWidget):
             except ValueError:
                 pass
 
-    def srv_ready(self, on_startup=False):
+    def __srv_ready(self, on_startup=False):
         if not self.subs_and_clients.sat_names_client.wait_for_service(timeout_sec=1.0):
             if on_startup:
                 msg_box = QMessageBox()
@@ -45,10 +45,10 @@ class TleListWidget(QListWidget):
                 msg_box.addButton(ca_btn, QMessageBox.ActionRole)
                 msg_box.exec()
                 if msg_box.clickedButton() == ta_btn:
-                    self.srv_ready(on_startup)
+                    self.__srv_ready(on_startup)
                 elif msg_box.clickedButton() == ca_btn:
-                    # TODO CHECK IF WORKS
-                    sys.exit()
+                    os._exit(0)
+                    # sys.exit()
             else:
                 msg_box = QMessageBox()
                 msg_box.setIcon(QMessageBox.Critical)
@@ -60,7 +60,7 @@ class TleListWidget(QListWidget):
                 msg_box.addButton(ca_btn, QMessageBox.ActionRole)
                 msg_box.exec()
                 if msg_box.clickedButton() == ta_btn:
-                    self.srv_ready(on_startup)
+                    self.__srv_ready(on_startup)
                 elif msg_box.clickedButton() == ca_btn:
                     return False
         else:
@@ -70,7 +70,7 @@ class TleListWidget(QListWidget):
         self.clear()
         # TODO AFTER think about how to save checked and selected items
 
-        if self.srv_ready(on_startup):
+        if self.__srv_ready(on_startup):
             req = SatsNames.Request()
             future = self.subs_and_clients.sat_names_client.call_async(req)
             while rclpy.ok():

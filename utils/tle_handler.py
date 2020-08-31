@@ -291,7 +291,7 @@ def is_tle(tle):
         return False
 
 
-def srv_ready(client, on_startup=False):
+def __srv_ready(client, on_startup=False):
     if not client.wait_for_service(timeout_sec=1.0):
         if on_startup:
             msg_box = QMessageBox()
@@ -304,10 +304,11 @@ def srv_ready(client, on_startup=False):
             msg_box.addButton(ca_btn, QMessageBox.ActionRole)
             msg_box.exec()
             if msg_box.clickedButton() == ta_btn:
-                srv_ready(client, on_startup)
+                __srv_ready(client, on_startup)
             elif msg_box.clickedButton() == ca_btn:
-                # TODO CHECK IF WORKS
-                sys.exit()
+                # noinspection PyProtectedMember,PyUnresolvedReferences
+                os._exit(0)
+                # sys.exit()
         else:
             msg_box = QMessageBox()
             msg_box.setIcon(QMessageBox.Critical)
@@ -319,7 +320,7 @@ def srv_ready(client, on_startup=False):
             msg_box.addButton(ca_btn, QMessageBox.ActionRole)
             msg_box.exec()
             if msg_box.clickedButton() == ta_btn:
-                srv_ready(client, on_startup)
+                __srv_ready(client, on_startup)
             elif msg_box.clickedButton() == ca_btn:
                 return False
     else:
@@ -327,7 +328,7 @@ def srv_ready(client, on_startup=False):
 
 
 def get_tles(tle_list_widget, subs_and_clients, on_startup=False):
-    if srv_ready(subs_and_clients.sat_tles_client, on_startup):
+    if __srv_ready(subs_and_clients.sat_tles_client, on_startup):
         ids = []
         for i in range(tle_list_widget.count()):
             ids.append(int(tle_list_widget.item(i).statusTip()))

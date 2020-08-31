@@ -27,7 +27,7 @@ from utils.widgets.tle_list_widget import TleListWidget
 from utils.widgets.velocity_diff_graph_widget import VelocityDiffGraphWidget
 
 
-# TODO GRAPH UPDATE FROM ANOTHER THREAD (SIGNAL-SLOT)
+# TODO rosout to file
 # import sys  # Suppressing the error messages
 #
 #
@@ -96,10 +96,10 @@ class MainWindow(QMainWindow):
         # self.construct_widgets()
 
         self.rid = None
+        subs_and_clients.set_ant_vel_slot(self.antenna_velocities_widget.update_velocity)
         subs_and_clients.set_sat_graph_slot(self.antenna_graph_widget.update_sat_graph)
         subs_and_clients.set_ant_graph_slot(self.antenna_graph_widget.update_ant_graph)
         subs_and_clients.set_ant_pose_slot(self.antenna_pose_widget.update_pose)
-        subs_and_clients.set_ant_vel_slot(self.antenna_velocities_widget.update_velocity)
         subs_and_clients.set_status_slot(self.update_status_combo_box)
 
         # self.prediction_window = PredictionWindow()
@@ -143,10 +143,10 @@ class MainWindow(QMainWindow):
         splitter.addWidget(cw)
 
         rw = self.construct_right_widget(is_admin)
-        rw.setMinimumSize(250, 400)
+        rw.setMinimumSize(200, 400)
         splitter.addWidget(rw)
 
-        splitter.setSizes([0, 640, 0])
+        splitter.setSizes([250, 640, 150])
         main_hbox.addWidget(splitter)
 
         # noinspection PyArgumentList
@@ -185,7 +185,9 @@ class MainWindow(QMainWindow):
         self.server_error_box.exec()
         if self.server_error_box.clickedButton() == ca_btn:
             self.close()
-            sys.exit()
+            # noinspection PyProtectedMember,PyUnresolvedReferences
+            os._exit(0)
+            # sys.exit()
 
     def update_timer(self):
         self.timer.start(int(self.settings.value("general_settings/map_update_period", 1000)))
@@ -274,14 +276,12 @@ class MainWindow(QMainWindow):
         btn_widget.setLayout(btn_grid)
 
         home_btn = QPushButton("Home", self)
-        # home_btn.setToolTip("Add TLE to the list")
         home_btn.clicked.connect(self.home_btn_clicked)
         two_btn_grid.addWidget(home_btn, 0, 0, 1, 10)
 
-        # stop_btn = QPushButton("Stop", self)
-        # home_btn.setToolTip("Add TLE to the list")
-        # stop_btn.clicked.connect(self.stop_btn_clicked)
-        # two_btn_grid.addWidget(stop_btn, 0, 10, 1, 10)
+        stop_btn = QPushButton("Stop", self)
+        stop_btn.clicked.connect(self.stop_btn_clicked)
+        two_btn_grid.addWidget(stop_btn, 0, 10, 1, 10)
 
         if is_admin:
             reset_btn = QPushButton("Reset", self)
@@ -299,8 +299,8 @@ class MainWindow(QMainWindow):
         scroll_area.setWidget(self.satellite_data_widget)
         splitter.addWidget(scroll_area)
 
-        splitter.setStretchFactor(2, 8)
-        splitter.setStretchFactor(3, 2)
+        splitter.setStretchFactor(3, 8)
+        splitter.setStretchFactor(4, 1)
 
         right_vbox.addWidget(splitter)
         # right_vbox.addWidget(btn_widget)
@@ -349,7 +349,17 @@ class MainWindow(QMainWindow):
                                                                        "Stacktrace: {}".format(e), QMessageBox.Ok)
                     else:
                         if response.res:
+                            # TODO CHECK !!!
                             QMessageBox.information(self, "params_set_client", "Antenna stopped", QMessageBox.Ok)
+                            self.set_active_btn.setText("Track")
+                            self.rid.setBackground(self.background_color)
+                            self.antenna_graph_widget.is_tracking = False
+                            self.antenna_pose_widget.clear_labels()
+                            self.antenna_velocities_widget.clear_labels()
+                            subs_and_clients.sat_azs, subs_and_clients.sat_els = [], []
+                            subs_and_clients.ant_azs, subs_and_clients.ant_els = [], []
+                            self.antenna_pose_widget.clear_data()
+                            self.antenna_velocities_widget.clear_data()
                         else:
                             QMessageBox.warning(self, "params_set_client", "Cannot stop antenna", QMessageBox.Ok)
 
@@ -593,12 +603,26 @@ class MainWindow(QMainWindow):
             settings_btn.clicked.connect(self.show_parameters_window)
             self.statusBar().addWidget(settings_btn)
 
+            # obs_pose_btn = QPushButton("Observer Position", self)
+            # obs_pose_btn.clicked.connect(self.show_obs_pose_window)
+            # self.statusBar().addWidget(obs_pose_btn)
+
+            users_btn = QPushButton("Users", self)
+            users_btn.clicked.connect(self.show_users_window)
+            self.statusBar().addWidget(users_btn)
+
         self.statusBar().addWidget(self.clock_lbl)
 
         self.statusBar().addPermanentWidget(VLine())
         self.statusBar().addPermanentWidget(status_lbl)
         self.statusBar().addPermanentWidget(self.status_combo_box)
         self.statusBar().addPermanentWidget(VLine())
+
+    def show_users_window(self):
+        pass
+
+    def show_obs_pose_window(self):
+        pass
 
     def update_clock_lbl(self, ts):
         if self.server_error_box:
@@ -648,7 +672,6 @@ class MainWindow(QMainWindow):
                                                 QMessageBox.Ok)
                         else:
                             if response.res:
-                                # TODO func
                                 if srv_ready(subs_and_clients.params_set_client):
                                     req = ParamsSet.Request()
                                     req.names = ["op_mode"]
