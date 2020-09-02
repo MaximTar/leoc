@@ -49,6 +49,8 @@ class SubscribersAndClients(Node):
         self.sys_auth_client = self.create_client(SysAuth, '/antenna/sys/auth')
         self.sys_deauth_client = self.create_client(SysDeauth, '/antenna/sys/deauth')
         self.mcu_reset_client = self.create_client(McuReset, '/antenna/mcu/reset')
+        self.sys_ping_client = self.create_client(SysPing, '/antenna/sys/ping')
+        self.sys_passwd_client = self.create_client(SysPasswd, '/antenna/sys/passwd')
 
         # user data
         self.usr_tle_set_client = self.create_client(TlesUserSet, '/antenna/tles/user/set')

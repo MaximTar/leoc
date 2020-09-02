@@ -343,12 +343,12 @@ def get_tles(tle_list_widget, subs_and_clients, on_startup=False):
                     response = future.result()
                     # print(response)
                 except Exception as e:
-                    QMessageBox.warning(tle_list_widget.parent(), "sat_tles_client", "Cannot get TLEs list.\n"
+                    QMessageBox.warning(tle_list_widget.prnt(), "sat_tles_client", "Cannot get TLEs list.\n"
                                                                                      "Stacktrace: {}".format(e),
                                         QMessageBox.Ok)
                 else:
                     if req.ids and not response.tles:
-                        QMessageBox.warning(tle_list_widget.parent(), "sat_tles_client", "Cannot get TLEs list.",
+                        QMessageBox.warning(tle_list_widget.prnt(), "sat_tles_client", "Cannot get TLEs list.",
                                             QMessageBox.Ok)
                     else:
                         save_tles(response.tles)

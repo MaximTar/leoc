@@ -84,7 +84,7 @@ class LoginWidget(QWidget):
         self.animation.setKeyValueAt(0.666, self.right_lbl_geometry)
 
     def check_password(self):
-        if __srv_ready(self.subs_and_clients.sys_auth_client, on_startup=True):
+        if self.__srv_ready(self.subs_and_clients.sys_auth_client, on_startup=True):
             req = SysAuth.Request()
             req.login = str(self.line_edit_username.text())
             req.password = str(self.line_edit_password.text())
@@ -116,23 +116,23 @@ class LoginWidget(QWidget):
                     break
 
 
-def __srv_ready(client, on_startup=False):
-    if not client.wait_for_service(timeout_sec=1.0):
-        if on_startup:
-            msg_box = QMessageBox()
-            msg_box.setIcon(QMessageBox.Critical)
-            msg_box.setText("{} is not responding".format(client.srv_name))
-            msg_box.setWindowTitle(client.srv_name)
-            ta_btn = QPushButton("Try again")
-            ca_btn = QPushButton("Close app")
-            msg_box.addButton(ta_btn, QMessageBox.ActionRole)
-            msg_box.addButton(ca_btn, QMessageBox.ActionRole)
-            msg_box.exec()
-            if msg_box.clickedButton() == ta_btn:
-                __srv_ready(client, on_startup)
-            elif msg_box.clickedButton() == ca_btn:
-                # noinspection PyProtectedMember,PyUnresolvedReferences
-                os._exit(0)
-                # sys.exit()
-    else:
-        return True
+    def __srv_ready(self, client, on_startup=False):
+        if not client.wait_for_service(timeout_sec=1.0):
+            if on_startup:
+                msg_box = QMessageBox()
+                msg_box.setIcon(QMessageBox.Critical)
+                msg_box.setText("{} is not responding".format(client.srv_name))
+                msg_box.setWindowTitle(client.srv_name)
+                ta_btn = QPushButton("Try again")
+                ca_btn = QPushButton("Close app")
+                msg_box.addButton(ta_btn, QMessageBox.ActionRole)
+                msg_box.addButton(ca_btn, QMessageBox.ActionRole)
+                msg_box.exec()
+                if msg_box.clickedButton() == ta_btn:
+                    __srv_ready(client, on_startup)
+                elif msg_box.clickedButton() == ca_btn:
+                    # noinspection PyProtectedMember,PyUnresolvedReferences
+                    os._exit(0)
+                    # sys.exit()
+        else:
+            return True

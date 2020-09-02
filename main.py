@@ -12,6 +12,8 @@ from utils.settings_window import SettingsWindow
 from utils.subs_and_clients import SubscribersAndClients
 from utils.tle_handler import *
 from utils.user_db_window import UserDbWindow
+from utils.users_window import UsersWindow
+from utils.srv_client_handler import srv_ready
 from utils.widgets.antenna_adjustment_widget import AntennaAdjustmentWidget
 from utils.widgets.antenna_control_widget import AntennaControlWidget
 from utils.widgets.antenna_graph_widget import AntennaGraphWidget
@@ -27,7 +29,9 @@ from utils.widgets.tle_list_widget import TleListWidget
 from utils.widgets.velocity_diff_graph_widget import VelocityDiffGraphWidget
 
 
-# TODO rosout to file
+# TODO ping()
+# TODO /rosout to widget + file
+# TODO login - enter
 # import sys  # Suppressing the error messages
 #
 #
@@ -115,6 +119,7 @@ class MainWindow(QMainWindow):
         self.user_db_win = UserDbWindow()
         self.server_error_box = None
 
+    # noinspection PyAttributeOutsideInit
     def after_login(self):
         self.tle_list_widget = TleListWidget(subs_and_clients, parent_slot=self.update_map_widget,
                                              data_slot=self.update_sat_data)
@@ -618,8 +623,26 @@ class MainWindow(QMainWindow):
         self.statusBar().addPermanentWidget(self.status_combo_box)
         self.statusBar().addPermanentWidget(VLine())
 
+    # noinspection PyAttributeOutsideInit
     def show_users_window(self):
-        pass
+        if srv_ready(subs_and_clients.sys_passwd_client):
+            req = SysPasswd.Request()
+            future = subs_and_clients.sys_passwd_client.call_async(req)
+            while rclpy.ok():
+                # TODO LOADING
+                if future.done():
+                    try:
+                        response = future.result()
+                    except Exception as e:
+                        QMessageBox.warning(self, "sys_passwd_client", "Cannot get users list.\n"
+                                                                       "Stacktrace: {}".format(e), QMessageBox.Ok)
+                    else:
+                        if response.users:
+                            self.users_window = UsersWindow(users=response.users, subs_and_clients=subs_and_clients,
+                                                            prnt=self)
+                            self.users_window.centerize(self)
+                            self.users_window.show()
+                    break
 
     def show_obs_pose_window(self):
         pass

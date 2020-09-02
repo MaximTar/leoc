@@ -117,7 +117,10 @@ class ParametersWindow(QMainWindow):
                                     # v = response.values[i]
                                     v = values[i]
                                     v = '0' if v == '' else v
-                                    v_item.setValue(float(v))
+                                    if isinstance(v_item, QLabel):
+                                        pass
+                                    else:
+                                        v_item.setValue(float(v))
                         break
 
     def apply_btn_clicked(self):
