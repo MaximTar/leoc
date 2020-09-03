@@ -9,11 +9,11 @@ from antenna_interfaces.srv import *
 from utils.lines import *
 from utils.parameters_window import ParametersWindow
 from utils.settings_window import SettingsWindow
+from utils.srv_client_handler import srv_ready
 from utils.subs_and_clients import SubscribersAndClients
 from utils.tle_handler import *
 from utils.user_db_window import UserDbWindow
 from utils.users_window import UsersWindow
-from utils.srv_client_handler import srv_ready
 from utils.widgets.antenna_adjustment_widget import AntennaAdjustmentWidget
 from utils.widgets.antenna_control_widget import AntennaControlWidget
 from utils.widgets.antenna_graph_widget import AntennaGraphWidget
@@ -25,12 +25,12 @@ from utils.widgets.map_widget import MapWidget
 from utils.widgets.pose_diff_graph_widget import PoseDiffGraphWidget
 from utils.widgets.prediction_input_widget import PredictionInputWidget
 from utils.widgets.satellite_data_widget import SatelliteDataWidget
+from utils.widgets.server_log_widget import ServerLogWidget
 from utils.widgets.tle_list_widget import TleListWidget
 from utils.widgets.velocity_diff_graph_widget import VelocityDiffGraphWidget
 
 
 # TODO /rosout to widget + file
-# TODO login - enter
 # import sys  # Suppressing the error messages
 #
 #
@@ -117,6 +117,8 @@ class MainWindow(QMainWindow):
 
         self.user_db_win = UserDbWindow()
         self.server_error_box = None
+        self.server_log_widget = ServerLogWidget()
+        subs_and_clients.set_rosout_slot(self.server_log_widget.update_text)
 
     # noinspection PyAttributeOutsideInit
     def after_login(self):
@@ -191,12 +193,18 @@ class MainWindow(QMainWindow):
         mw = self.map_widget
         splitter.addWidget(mw)
 
+        splitter.addWidget(self.server_log_widget)
+
         if is_admin:
             splitter.addWidget(self.pose_graph_widget)
             splitter.addWidget(self.velocity_graph_widget)
             splitter.setStretchFactor(0, 100)
             splitter.setStretchFactor(1, 1)
             splitter.setStretchFactor(2, 1)
+            splitter.setStretchFactor(3, 1)
+        else:
+            splitter.setStretchFactor(0, 10)
+            splitter.setStretchFactor(1, 1)
 
         return splitter
 
@@ -817,6 +825,7 @@ class MainWindow(QMainWindow):
         self.map_widget.update_mcc_qpoint()
 
     def closeEvent(self, event):
+        subs_and_clients.log_file.close()
         if srv_ready(subs_and_clients.sys_deauth_client):
             req = SysDeauth.Request()
             future = subs_and_clients.sys_deauth_client.call_async(req)

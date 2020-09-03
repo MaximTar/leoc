@@ -1,10 +1,10 @@
-from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QMessageBox
+import os
+import time
+
 from antenna_interfaces.msg import *
 from antenna_interfaces.srv import *
+from rcl_interfaces.msg import Log
 from rclpy.node import Node
-
-import datetime
 
 
 # noinspection PyUnresolvedReferences
@@ -22,6 +22,12 @@ class SubscribersAndClients(Node):
 
         self.status_slot = None
         self.clock_slot = None
+        self.rosout_slot = None
+
+        dir_name = os.path.dirname(os.path.realpath(__file__))
+        time_str = time.strftime("%Y%m%d-%H%M%S")
+        file_name = os.path.join(dir_name, "../logs/", time_str)
+        self.log_file = open(file_name, 'a')
 
         self.antenna_state_sub = self.create_subscription(
             State,
@@ -43,6 +49,13 @@ class SubscribersAndClients(Node):
             self._heartbeat_cb,
             10)
         self.ts = None
+
+        self.rosout_sub = self.create_subscription(
+            Log,
+            '/rosout',
+            self._rosout_cb,
+            20)
+        self.stamp_s, self.stamp_ns, self.lvl, self.msg = None, None, None, None
 
         # system
         self.sys_log_client = self.create_client(SysLog, '/antenna/sys/log')
@@ -70,6 +83,18 @@ class SubscribersAndClients(Node):
         self.params_info_client = self.create_client(ParamsInfo, '/antenna/params/info')
         self.params_client = self.create_client(Params, '/antenna/params')
         self.params_set_client = self.create_client(ParamsSet, '/antenna/params/set')
+
+    def _rosout_cb(self, msg):
+        self.stamp_s = msg.stamp.sec
+        self.stamp_ns = msg.stamp.nanosec
+        self.lvl = msg.level
+        self.msg = msg.msg
+
+        line = "[{}] [{}.{}] {}\n".format(self.lvl, self.stamp_s, self.stamp_ns, self.msg)
+        self.log_file.write(line)
+
+        if self.rosout_slot:
+            self.rosout_slot(self.stamp_s, self.stamp_ns, self.lvl, self.msg)
 
     def _active_satellite_state_cb(self, msg):
         self.sat_lat = msg.lat
@@ -142,3 +167,6 @@ class SubscribersAndClients(Node):
 
     def set_clock_slot(self, clock_slot):
         self.clock_slot = clock_slot
+
+    def set_rosout_slot(self, rosout_slot):
+        self.rosout_slot = rosout_slot
