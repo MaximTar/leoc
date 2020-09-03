@@ -29,7 +29,6 @@ from utils.widgets.tle_list_widget import TleListWidget
 from utils.widgets.velocity_diff_graph_widget import VelocityDiffGraphWidget
 
 
-# TODO ping()
 # TODO /rosout to widget + file
 # TODO login - enter
 # import sys  # Suppressing the error messages
@@ -133,6 +132,34 @@ class MainWindow(QMainWindow):
         self.timer.timeout.connect(self.update_map_widget)
         self.timer.timeout.connect(self.update_sat_data)
         self.timer.start(int(self.settings.value("general_settings/map_update_period", 1000)))
+
+        self.ping_server()
+
+    def ping_server(self, btn=False):
+        if srv_ready(subs_and_clients.sys_ping_client):
+            req = SysPing.Request()
+            future = subs_and_clients.sys_ping_client.call_async(req)
+            while rclpy.ok():
+                # TODO LOADING
+                if future.done():
+                    try:
+                        response = future.result()
+                    except Exception as e:
+                        QMessageBox.warning(self, "sys_ping_client",
+                                            "Cannot ping server.\n"
+                                            "Stacktrace: {}".format(e),
+                                            QMessageBox.Ok)
+                    else:
+                        if response.res:
+                            if btn:
+                                QMessageBox.information(self, "sys_ping_client",
+                                                        "Server has internet access.", QMessageBox.Ok)
+                            return True
+                        else:
+                            QMessageBox.warning(self, "sys_ping_client",
+                                                "Server has no internet access.", QMessageBox.Ok)
+                            return False
+                    break
 
     def construct_widgets(self, is_admin=False):
         main_hbox = QHBoxLayout()
@@ -430,6 +457,9 @@ class MainWindow(QMainWindow):
         add_box.setStandardButtons(QMessageBox.Cancel)
         by_id_btn = add_box.addButton("By ID", QMessageBox.ActionRole)
         by_name_btn = add_box.addButton("By name", QMessageBox.ActionRole)
+        if not self.ping_server():
+            by_id_btn.setEnabled(False)
+            by_name_btn.setEnabled(False)
         manual_btn = add_box.addButton("Set user DB", QMessageBox.ActionRole)
         add_box.setDefaultButton(QMessageBox.Cancel)
 
@@ -615,6 +645,10 @@ class MainWindow(QMainWindow):
             users_btn = QPushButton("Users", self)
             users_btn.clicked.connect(self.show_users_window)
             self.statusBar().addWidget(users_btn)
+
+            ping_btn = QPushButton("Ping", self)
+            ping_btn.clicked.connect(lambda: self.ping_server(btn=True))
+            self.statusBar().addWidget(ping_btn)
 
         self.statusBar().addWidget(self.clock_lbl)
 
