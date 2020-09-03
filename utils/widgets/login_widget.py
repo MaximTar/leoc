@@ -25,6 +25,7 @@ class LoginWidget(QWidget):
         label_name = QLabel('Username')
         self.line_edit_username = QLineEdit()
         self.line_edit_username.setPlaceholderText('Please enter your username')
+        self.line_edit_username.returnPressed.connect(self.check_password)
         layout.addWidget(label_name, 0, 0)
         layout.addWidget(self.line_edit_username, 0, 1)
 
@@ -32,6 +33,7 @@ class LoginWidget(QWidget):
         self.line_edit_password = QLineEdit()
         self.line_edit_password.setPlaceholderText('Please enter your password')
         self.line_edit_password.setEchoMode(QLineEdit.Password)
+        self.line_edit_password.returnPressed.connect(self.check_password)
         layout.addWidget(label_password, 1, 0)
         layout.addWidget(self.line_edit_password, 1, 1)
 
@@ -41,6 +43,8 @@ class LoginWidget(QWidget):
         layout.addWidget(self.wrong_lbl, 2, 0, 1, 2, Qt.AlignHCenter)
 
         button_login = QPushButton('Login')
+        button_login.setDefault(True)
+        button_login.setAutoDefault(True)
         button_login.clicked.connect(self.check_password)
         layout.addWidget(button_login, 3, 0, 1, 2)
 
@@ -115,7 +119,7 @@ class LoginWidget(QWidget):
                             self.animation.start()
                     break
 
-
+    # noinspection PyMethodMayBeStatic
     def __srv_ready(self, client, on_startup=False):
         if not client.wait_for_service(timeout_sec=1.0):
             if on_startup:
